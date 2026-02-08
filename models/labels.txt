@@ -1,0 +1,16 @@
+Tomato___healthy
+Tomato___Septoria_leaf_spot
+Tomato___Bacterial_spot
+Tomato___Late_blight
+Cabbage___healthy
+Tomato___Spider_mites
+Tomato___Leaf_Mold
+Tomato___Tomato_Yellow_Leaf_Curl_Virus
+Soybean___Frogeye_Leaf_Spot
+Soybean___Downy_Mildew
+Corn_(maize)___Common_rust_
+Corn_(maize)___healthy
+Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot
+Corn_(maize)___Lethal_Necrosis
+Soybean___healthy
+Cabbage___Black_Rot
