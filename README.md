@@ -111,7 +111,7 @@ python3 -c "import picamera2; import PyQt5; print('✓ Libraries OK')"
 ### Step 3: Download Project
 
 ```bash
-cd ~/electronic-kit/for-raspberry-pi/python/21_PlantDiseaseDetection
+https://github.com/mariarodr1136/LeafMedic.git
 ```
 
 ### Step 4: Obtain ML Model
@@ -145,7 +145,6 @@ Plan to expand disease coverage by:
 ### Running the Application
 
 ```bash
-cd ~/electronic-kit/for-raspberry-pi/python/21_PlantDiseaseDetection
 python3 main.py
 ```
 
