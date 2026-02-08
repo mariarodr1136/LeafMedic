@@ -12,6 +12,16 @@ This project demonstrates practical, production-oriented engineering skills acro
 
 ---
 
+![plant_interface](https://github.com/user-attachments/assets/b88a5e3d-b727-433a-b9e1-e93642789667)
+
+---
+
+![raspberry_camera](https://github.com/user-attachments/assets/c243f4a5-1a0e-48db-b00f-42197850fbcb)
+
+
+---
+
+
 ## 📋 Table of Contents
 
 - [Features](#-features)
@@ -185,6 +195,9 @@ python3 disease_database.py
 ### Currently Supported (16 Classes - Kaggle AgriPredict Model)
 
 The system **currently detects** the following plant diseases with **90%+ accuracy**:
+
+![plant_dataset](https://github.com/user-attachments/assets/d8b5b407-6ce5-4f6e-a7d3-cbe942a3c1dd)
+
 
 #### 🍅 Tomato (8 classes)
 - ✓ **Healthy** - No disease present
