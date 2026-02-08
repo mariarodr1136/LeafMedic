@@ -14,7 +14,7 @@ This project demonstrates practical, production-oriented engineering skills acro
 
 ## 📋 Table of Contents
 
-- [Features](#features)
+- [Features](#-features)
 - [Hardware Requirements](#hardware-requirements)
 - [Software Dependencies](#software-dependencies)
 - [Installation](#installation)
@@ -24,9 +24,11 @@ This project demonstrates practical, production-oriented engineering skills acro
 - [Project Structure](#project-structure)
 - [Troubleshooting](#troubleshooting)
 - [Educational Purpose](#educational-purpose)
-- [Development History & Technical Challenges](#development-history--technical-challenges)
 - [Contributing](#contributing)
 - [License](#license)
+- [Acknowledgments](#acknowledgments)
+- [Contact](#contact-)
+
 
 ---
 
