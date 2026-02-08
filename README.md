@@ -1,10 +1,14 @@
-# Plant Disease Detection System
+# LeafMedic: Embedded Computer Vision & Machine Learning System 🪴🔎
 
-Raspberry Pi-based plant disease detection system using computer vision and machine learning. Identifies 16 plant diseases from leaf images with **90%+ accuracy** and provides treatment recommendations.
+**LeafMedic: Embedded Computer Vision & Machine Learning System** is an end-to-end **edge AI application** that performs real-time plant disease classification using **computer vision** and **machine learning**, fully deployed on a **Raspberry Pi**. Built with **Python**, the system integrates camera-based image acquisition, an optimized **TensorFlow Lite** **MobileNet** model for on-device inference, and a modular software architecture designed for performance, scalability, and maintainability.
 
-**Supported Crops**: Tomato, Corn (Maize), Soybean, Cabbage | **Classes**: 16 diseases | **Model**: Kaggle AgriPredict MobileNetV1 | **Inference**: ~145ms on Pi 4
+The application captures high-resolution leaf images, dynamically preprocesses them to match model requirements, and executes low-latency inference directly on embedded hardware. A responsive **PyQt5** graphical interface presents confidence-ranked predictions along with structured treatment recommendations sourced from a curated disease knowledge base.
 
-![Raspberry Pi Plant Disease Detection](https://img.shields.io/badge/Raspberry%20Pi-4B-red) ![Python](https://img.shields.io/badge/Python-3.7+-blue) ![TensorFlow](https://img.shields.io/badge/TensorFlow-Lite-orange) ![License](https://img.shields.io/badge/License-Educational-green)
+This project demonstrates practical, production-oriented engineering skills across **machine learning deployment**, **software architecture**, and **edge computing**, highlighting the ability to move beyond experimental notebooks and deliver robust, real-world AI systems. It reflects hands-on experience with **ML model integration**, **hardware–software interaction**, **performance optimization**, and **user-focused application design**.
+
+---
+
+![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-4B-red) ![Python](https://img.shields.io/badge/Python-3.7%2B-blue) ![TensorFlow Lite](https://img.shields.io/badge/TensorFlow-Lite-orange) ![Computer Vision](https://img.shields.io/badge/Computer%20Vision-OpenCV-green) ![Machine Learning](https://img.shields.io/badge/Machine%20Learning-Edge%20AI-purple) ![GUI](https://img.shields.io/badge/GUI-PyQt5-brightgreen) ![Platform](https://img.shields.io/badge/Platform-Linux-lightgrey) ![Model](https://img.shields.io/badge/Model-MobileNetV1-blueviolet) ![Inference](https://img.shields.io/badge/Inference-Real--Time-success) ![License](https://img.shields.io/badge/License-Educational-yellowgreen)
 
 ---
 
@@ -487,33 +491,6 @@ This project is designed for **educational purposes** to demonstrate:
 
 ---
 
-## 🔧 Development History & Technical Challenges
-
-This section documents the development journey and technical challenges that were encountered and resolved.
-
-### Hardware Setup Challenges
-
-**Camera Configuration**:
-- Initial issue: Wrong camera driver in `/boot/firmware/config.txt`
-- Solution: Changed from `dtoverlay=imx519` to `camera_auto_detect=1`
-- Lesson: Always verify camera detection with `libcamera-hello --list-cameras`
-
-### Software Dependency Issues
-
-**TensorFlow Installation**:
-- Challenge: Python 3.13 compatibility with old flatbuffers package
-- Error: `ModuleNotFoundError: No module named 'imp'`
-- Solution: Upgraded flatbuffers from version 20181003210633 to 24.3.25
-```bash
-pip3 uninstall flatbuffers -y --break-system-packages
-pip3 install flatbuffers==24.3.25 --break-system-packages
-```
-
-**Display Connection**:
-- Challenge: Running GUI over headless SSH
-- Error: `qt.qpa.xcb: could not connect to display`
-- Solution: Must run on Pi desktop directly or use VNC with desktop forwarding
-
 ### Model Development Journey
 
 **Phase 1: Demo Model (2.6MB)**
@@ -551,28 +528,6 @@ The `ml_module.py` evolved to handle multiple model formats:
 3. Dynamic channels transposition
 4. Flexible input sizing (224x224, 300x300, etc.)
 5. Output format conversion
-```
-
-**Critical Code Sections**:
-
-```python
-# Check if model expects uint8 or float32 input
-if self.input_details[0]['dtype'] == np.uint8:
-    image = image.astype(np.uint8)  # No normalization!
-else:
-    image = image.astype(np.float32) / 255.0
-    # Apply ImageNet normalization if needed
-    mean = np.array([0.485, 0.456, 0.406])
-    std = np.array([0.229, 0.224, 0.225])
-    image = (image - mean) / std
-
-# Auto-transpose for channels-first models (PyTorch)
-if self.input_details[0]['shape'][1] == 3:
-    image = np.transpose(image, (0, 3, 1, 2))
-
-# Convert uint8 output to float probabilities
-if predictions.dtype == np.uint8:
-    predictions = predictions.astype(np.float32) / 255.0
 ```
 
 ### Database Expansion
@@ -674,18 +629,10 @@ This project is part of the SunFounder Raspberry Pi Electronic Kit and is intend
 - **Raspberry Pi Foundation**: Hardware platform and Picamera2 library
 - **PyQt5**: GUI framework for desktop applications
 
----
-
-## 📞 Support
-
-For issues:
-1. Check [Troubleshooting](#troubleshooting) section
-2. Review module test outputs
-3. Consult SunFounder tutorials
-4. Search Raspberry Pi forums
 
 ---
 
-**Happy Plant Disease Detection! 🌿🔬**
+## Contact 🌐
+If you have any questions or feedback, feel free to reach out at [mrodr.contact@gmail.com](mailto:mrodr.contact@gmail.com).
 
 *Educational Project - Learn, Experiment, Innovate*
