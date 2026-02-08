@@ -15,7 +15,7 @@ This project demonstrates practical, production-oriented engineering skills acro
 ## 📋 Table of Contents
 
 - [Features](#-features)
-- [Hardware Requirements](-#hardware-requirements)
+- [Hardware Requirements](#-hardware-requirements)
 - [Software Dependencies](#-software-dependencies)
 - [Installation](#-installation)
 - [Usage](#-usage)
@@ -27,7 +27,7 @@ This project demonstrates practical, production-oriented engineering skills acro
 - [Contributing](#-contributing)
 - [License](#-license)
 - [Acknowledgments](#-acknowledgments)
-- [Contact](#contact-)
+- [Contact](#-contact)
 
 
 ---
@@ -634,7 +634,7 @@ This project is part of the SunFounder Raspberry Pi Electronic Kit and is intend
 
 ---
 
-## Contact 🌐
+## 🌐 Contact
 If you have any questions or feedback, feel free to reach out at [mrodr.contact@gmail.com](mailto:mrodr.contact@gmail.com).
 
 *Educational Project - Learn, Experiment, Innovate*
