@@ -1,5 +1,8 @@
 # LeafMedic: Embedded Computer Vision & Machine Learning System 🪴🔎
 
+![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-4B-red) ![Python](https://img.shields.io/badge/Python-3.7%2B-blue) ![TensorFlow Lite](https://img.shields.io/badge/TensorFlow-Lite-orange) ![Computer Vision](https://img.shields.io/badge/Computer%20Vision-OpenCV-green) ![Machine Learning](https://img.shields.io/badge/Machine%20Learning-Edge%20AI-purple) ![GUI](https://img.shields.io/badge/GUI-PyQt5-brightgreen) ![Platform](https://img.shields.io/badge/Platform-Linux-lightgrey) ![Model](https://img.shields.io/badge/Model-MobileNetV1-blueviolet) ![Inference](https://img.shields.io/badge/Inference-Real--Time-success) ![License](https://img.shields.io/badge/License-Educational-yellowgreen)
+
+
 **LeafMedic: Embedded Computer Vision & Machine Learning System** is an end-to-end **edge AI application** that performs real-time plant disease classification using **computer vision** and **machine learning**, fully deployed on a **Raspberry Pi**. Built with **Python**, the system integrates camera-based image acquisition, an optimized **TensorFlow Lite** **MobileNet** model for on-device inference, and a modular software architecture designed for performance, scalability, and maintainability.
 
 The application captures high-resolution leaf images, dynamically preprocesses them to match model requirements, and executes low-latency inference directly on embedded hardware. A responsive **PyQt5** graphical interface presents confidence-ranked predictions along with structured treatment recommendations sourced from a curated disease knowledge base.
@@ -8,13 +11,7 @@ This project demonstrates practical, production-oriented engineering skills acro
 
 ---
 
-![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-4B-red) ![Python](https://img.shields.io/badge/Python-3.7%2B-blue) ![TensorFlow Lite](https://img.shields.io/badge/TensorFlow-Lite-orange) ![Computer Vision](https://img.shields.io/badge/Computer%20Vision-OpenCV-green) ![Machine Learning](https://img.shields.io/badge/Machine%20Learning-Edge%20AI-purple) ![GUI](https://img.shields.io/badge/GUI-PyQt5-brightgreen) ![Platform](https://img.shields.io/badge/Platform-Linux-lightgrey) ![Model](https://img.shields.io/badge/Model-MobileNetV1-blueviolet) ![Inference](https://img.shields.io/badge/Inference-Real--Time-success) ![License](https://img.shields.io/badge/License-Educational-yellowgreen)
-
----
-
 ![plant_interface](https://github.com/user-attachments/assets/b88a5e3d-b727-433a-b9e1-e93642789667)
-
----
 
 ![raspberry_camera](https://github.com/user-attachments/assets/c243f4a5-1a0e-48db-b00f-42197850fbcb)
 
