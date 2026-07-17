@@ -1,0 +1,17 @@
+{
+  "name": "LeafMedic — Plant Disease Detection",
+  "short_name": "LeafMedic",
+  "description": "Identify plant diseases from a leaf photo, entirely on your device.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f4f7f5",
+  "theme_color": "#1a7a4f",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
-# When the system detects this, it will search the installation path of python in the env setting,
-# then call the corresponding interpreter to complete the operation.
-# It is to prevent the user not installing the python onto the /usr/bin default path.
 
 """
-Plant Disease Detection System
-================================
+LeafMedic — Plant Disease Detection
+====================================
 Main application that integrates camera, ML model, and disease database
 to identify plant diseases and provide treatment recommendations.
 
-Hardware: Raspberry Pi 4 + OV5647 5MP Camera Module
-Libraries: PyQt5, TensorFlow Lite, Picamera2, OpenCV
-
-Educational Project - SunFounder Electronic Kit
-Lesson 21: Plant Disease Detection with Computer Vision
+Runs on a Raspberry Pi with a camera module, or on any desktop/laptop
+with a webcam. Prefer no install at all? Use the browser demo:
+https://mariarodr1136.github.io/LeafMedic/
 """
 
 import sys
@@ -37,24 +32,13 @@ def print_message():
     Print startup message with project information.
     """
     print("=" * 60)
-    print("|        Plant Disease Detection System                    |")
-    print("|    ------------------------------------------------      |")
-    print("|   Hardware: Raspberry Pi 4 + OV5647 Camera              |")
-    print("|   Model: MobileNetV2 TFLite (38 plant diseases)         |")
-    print("|   Interface: PyQt5 GUI with live camera preview         |")
-    print("|                                                          |")
-    print("|   Features:                                              |")
-    print("|   • Real-time camera preview                            |")
-    print("|   • Automated disease detection                         |")
-    print("|   • Treatment recommendations                           |")
-    print("|   • 14 crops, 26 diseases supported                     |")
-    print("|                                                          |")
-    print("|   Educational Project - For Learning Purposes Only      |")
-    print("|                                              SunFounder |")
+    print("  LeafMedic — Plant Disease Detection")
+    print("  MobileNetV2 TFLite · 16 conditions · 4 crops")
+    print("  Camera: Raspberry Pi module or any webcam")
+    print("  Educational project — not professional advice")
     print("=" * 60)
     print()
-    print("Program is starting...")
-    print("Initializing components...")
+    print("Starting up...")
     print()
 
 
@@ -110,9 +94,7 @@ def setup():
     print("=" * 60)
     print()
     print("Supported Plants:")
-    print("  • Apple, Blueberry, Cherry, Corn, Grape")
-    print("  • Orange, Peach, Pepper, Potato, Raspberry")
-    print("  • Soybean, Squash, Strawberry, Tomato")
+    print("  • Tomato, Corn (maize), Soybean, Cabbage")
     print()
     print("Instructions:")
     print("  1. Point camera at a plant leaf")

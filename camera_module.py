@@ -3,10 +3,9 @@
 """
 Camera Module for Plant Disease Detection
 ==========================================
-Handles Raspberry Pi Camera Module operations using Picamera2.
-Provides preview frames for GUI and captures high-resolution images for analysis.
-
-Educational Project - SunFounder Electronic Kit
+Handles camera operations for LeafMedic. Prefers the Raspberry Pi camera
+(Picamera2) when available and falls back to any regular webcam via OpenCV,
+so the app runs on laptops and desktops too.
 """
 
 import time
@@ -14,8 +13,11 @@ import numpy as np
 
 class CameraController:
     """
-    Camera Controller class for managing Raspberry Pi Camera Module.
-    Uses Picamera2 library for camera operations.
+    Camera Controller supporting two backends:
+      - 'picamera2': Raspberry Pi camera module
+      - 'opencv':    any webcam via cv2.VideoCapture
+    Both expose the same interface: get_preview_frame() and capture_image()
+    return RGB numpy arrays.
     """
 
     def __init__(self, preview_size=(640, 480), capture_size=(2592, 1944)):
@@ -29,24 +31,30 @@ class CameraController:
         self.preview_size = preview_size
         self.capture_size = capture_size
         self.camera = None
+        self.webcam = None
+        self.backend = None
         self.camera_available = False
         self.preview_config = None
         self.capture_config = None
 
     def setup(self):
         """
-        Initialize and configure the camera.
+        Initialize and configure the camera. Tries the Raspberry Pi camera
+        first, then falls back to a regular webcam.
 
         Returns:
             bool: True if successful, False otherwise
         """
+        if self._setup_picamera2():
+            return True
+        return self._setup_webcam()
+
+    def _setup_picamera2(self):
+        """Try to initialize the Raspberry Pi camera via Picamera2."""
         try:
-            # Import Picamera2
             try:
                 from picamera2 import Picamera2
             except ImportError:
-                print("✗ Error: Picamera2 not found!")
-                print("  Install with: sudo apt install python3-picamera2")
                 return False
 
             # Create camera instance
@@ -69,19 +77,49 @@ class CameraController:
             # Give camera time to warm up
             time.sleep(2)
 
+            self.backend = 'picamera2'
             self.camera_available = True
-            print("✓ Camera initialized successfully")
+            print("✓ Raspberry Pi camera initialized (Picamera2)")
             print(f"  Preview size: {self.preview_size}")
             print(f"  Capture size: {self.capture_size}")
 
             return True
 
         except Exception as e:
-            print(f"✗ Error initializing camera: {e}")
-            print("  Make sure:")
-            print("  1. Camera is properly connected")
-            print("  2. Camera is enabled in raspi-config")
-            print("  3. No other process is using the camera")
+            print(f"  Picamera2 unavailable ({e}), trying webcam...")
+            self.camera = None
+            return False
+
+    def _setup_webcam(self):
+        """Fall back to a regular webcam via OpenCV."""
+        try:
+            import cv2
+            self.webcam = cv2.VideoCapture(0)
+            if not self.webcam.isOpened():
+                print("✗ Error: No camera found (neither Pi camera nor webcam)")
+                print("  You can still use the application with image files.")
+                self.webcam = None
+                return False
+
+            self.webcam.set(cv2.CAP_PROP_FRAME_WIDTH, self.preview_size[0])
+            self.webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, self.preview_size[1])
+            # Grab one frame to confirm the device actually delivers images
+            ok, _ = self.webcam.read()
+            if not ok:
+                print("✗ Error: Webcam opened but returned no frames")
+                self.webcam.release()
+                self.webcam = None
+                return False
+
+            self.backend = 'opencv'
+            self.camera_available = True
+            actual = (int(self.webcam.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                      int(self.webcam.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+            print(f"✓ Webcam initialized (OpenCV, {actual[0]}x{actual[1]})")
+            return True
+
+        except Exception as e:
+            print(f"✗ Error initializing webcam: {e}")
             self.camera_available = False
             return False
 
@@ -92,16 +130,22 @@ class CameraController:
         Returns:
             numpy.ndarray: Preview frame in RGB format, or None if unavailable
         """
-        if not self.camera_available or self.camera is None:
+        if not self.camera_available:
             print("Warning: Camera not available")
             # Return a blank frame with "No Camera" message
             blank = np.zeros((self.preview_size[1], self.preview_size[0], 3), dtype=np.uint8)
             return blank
 
         try:
-            # Capture array (returns numpy array)
-            frame = self.camera.capture_array()
-            return frame
+            if self.backend == 'picamera2':
+                # Capture array (returns numpy array)
+                return self.camera.capture_array()
+
+            import cv2
+            ok, frame = self.webcam.read()
+            if not ok:
+                return None
+            return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         except Exception as e:
             print(f"Error capturing preview frame: {e}")
@@ -114,9 +158,16 @@ class CameraController:
         Returns:
             numpy.ndarray: Captured image in RGB format, or None if unavailable
         """
-        if not self.camera_available or self.camera is None:
+        if not self.camera_available:
             print("Error: Camera not available for capture")
             return None
+
+        if self.backend == 'opencv':
+            # Webcams deliver one resolution; a preview frame is the capture.
+            image = self.get_preview_frame()
+            if image is not None:
+                print(f"✓ Captured image: {image.shape}")
+            return image
 
         try:
             # Switch to capture configuration
@@ -178,10 +229,18 @@ class CameraController:
         Returns:
             dict: Camera information
         """
-        if not self.camera_available or self.camera is None:
+        if not self.camera_available:
             return {
                 "available": False,
                 "message": "Camera not initialized"
+            }
+
+        if self.backend == 'opencv':
+            return {
+                "available": True,
+                "model": "Webcam (OpenCV)",
+                "preview_size": self.preview_size,
+                "capture_size": self.preview_size
             }
 
         try:
@@ -209,6 +268,13 @@ class CameraController:
                 print("✓ Camera resources released")
             except Exception as e:
                 print(f"Error releasing camera: {e}")
+        if self.webcam is not None:
+            try:
+                self.webcam.release()
+                print("✓ Webcam released")
+            except Exception as e:
+                print(f"Error releasing webcam: {e}")
+            self.webcam = None
         self.camera_available = False
 
 

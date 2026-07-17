@@ -53,18 +53,22 @@ class DiseaseDetector:
             bool: True if successful, False otherwise
         """
         try:
-            # Try importing TensorFlow Lite
+            # Try importing a TFLite-compatible interpreter, newest first
             try:
-                import tensorflow as tf
-                self.Interpreter = tf.lite.Interpreter
+                from ai_edge_litert.interpreter import Interpreter
+                self.Interpreter = Interpreter
             except ImportError:
                 try:
-                    import tflite_runtime.interpreter as tflite
-                    self.Interpreter = tflite.Interpreter
+                    import tensorflow as tf
+                    self.Interpreter = tf.lite.Interpreter
                 except ImportError:
-                    print("✗ Error: TensorFlow Lite not found!")
-                    print("  Install with: pip3 install tensorflow or tflite-runtime")
-                    return False
+                    try:
+                        import tflite_runtime.interpreter as tflite
+                        self.Interpreter = tflite.Interpreter
+                    except ImportError:
+                        print("✗ Error: No TFLite interpreter found!")
+                        print("  Install one of: ai-edge-litert, tensorflow, tflite-runtime")
+                        return False
 
             # Load labels
             if not os.path.exists(self.labels_path):
@@ -106,7 +110,7 @@ class DiseaseDetector:
 
             # Warm up model with dummy prediction
             print("Warming up model...")
-            dummy_image = np.zeros((224, 224, 3), dtype=np.uint8)
+            dummy_image = np.zeros((*self.input_size, 3), dtype=np.uint8)
             self.predict(dummy_image)
             print("✓ Model ready for inference")
 

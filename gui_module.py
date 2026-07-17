@@ -39,6 +39,43 @@ class AnalysisThread(QThread):
             self.error.emit(str(e))
 
 
+# Palette shared with the web demo (docs/css/style.css)
+APP_STYLESHEET = """
+QMainWindow, QWidget {
+    background-color: #f4f7f5;
+    color: #1c2823;
+    font-family: "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+    font-size: 13px;
+}
+QGroupBox {
+    background-color: #ffffff;
+    border: 1px solid #dce5df;
+    border-radius: 10px;
+    margin-top: 12px;
+    padding: 14px 10px 10px 10px;
+    font-weight: 600;
+    color: #5b6b62;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 4px;
+    text-transform: uppercase;
+}
+QTextEdit {
+    background-color: #ffffff;
+    border: 1px solid #dce5df;
+    border-radius: 8px;
+    padding: 8px;
+}
+QStatusBar {
+    background-color: #ffffff;
+    border-top: 1px solid #dce5df;
+    color: #5b6b62;
+}
+"""
+
+
 class PlantDiseaseGUI(QMainWindow):
     """
     Main GUI window for the Plant Disease Detection System.
@@ -61,8 +98,9 @@ class PlantDiseaseGUI(QMainWindow):
         """
         Initialize the user interface.
         """
-        self.setWindowTitle("Plant Disease Detection System")
+        self.setWindowTitle("LeafMedic — Plant Disease Detection")
         self.setGeometry(100, 100, 1200, 800)
+        self.setStyleSheet(APP_STYLESHEET)
 
         # Create central widget and main layout
         central_widget = QWidget()
@@ -98,7 +136,7 @@ class PlantDiseaseGUI(QMainWindow):
 
         self.preview_label = QLabel()
         self.preview_label.setFixedSize(640, 480)
-        self.preview_label.setStyleSheet("border: 2px solid #3498db; background-color: black;")
+        self.preview_label.setStyleSheet("border: 1px solid #dce5df; border-radius: 8px; background-color: #0c110e; color: #9fb3a7;")
         self.preview_label.setAlignment(Qt.AlignCenter)
         self.preview_label.setText("Initializing camera...")
         preview_layout.addWidget(self.preview_label)
@@ -113,19 +151,19 @@ class PlantDiseaseGUI(QMainWindow):
         self.capture_button.setMinimumHeight(60)
         self.capture_button.setStyleSheet("""
             QPushButton {
-                background-color: #27ae60;
+                background-color: #22996a;
                 color: white;
-                border-radius: 8px;
+                border-radius: 9px;
                 padding: 10px;
             }
             QPushButton:hover {
-                background-color: #229954;
+                background-color: #1a7a4f;
             }
             QPushButton:pressed {
-                background-color: #1e8449;
+                background-color: #14603e;
             }
             QPushButton:disabled {
-                background-color: #95a5a6;
+                background-color: #a9b8af;
             }
         """)
         self.capture_button.clicked.connect(self.capture_and_analyze)
@@ -136,16 +174,17 @@ class PlantDiseaseGUI(QMainWindow):
         self.load_button.setMinimumHeight(50)
         self.load_button.setStyleSheet("""
             QPushButton {
-                background-color: #3498db;
-                color: white;
-                border-radius: 8px;
+                background-color: #ffffff;
+                color: #1c2823;
+                border: 1px solid #dce5df;
+                border-radius: 9px;
                 padding: 10px;
             }
             QPushButton:hover {
-                background-color: #2980b9;
+                background-color: #eef3f0;
             }
             QPushButton:pressed {
-                background-color: #21618c;
+                background-color: #dce5df;
             }
         """)
         self.load_button.clicked.connect(self.load_image_file)
@@ -173,7 +212,7 @@ class PlantDiseaseGUI(QMainWindow):
 
         self.captured_label = QLabel()
         self.captured_label.setFixedSize(400, 300)
-        self.captured_label.setStyleSheet("border: 2px solid #e74c3c; background-color: #ecf0f1;")
+        self.captured_label.setStyleSheet("border: 1px solid #dce5df; border-radius: 8px; background-color: #eef3f0; color: #5b6b62;")
         self.captured_label.setAlignment(Qt.AlignCenter)
         self.captured_label.setText("No image captured yet")
         image_layout.addWidget(self.captured_label, alignment=Qt.AlignCenter)
@@ -200,14 +239,6 @@ class PlantDiseaseGUI(QMainWindow):
 
         self.treatment_text = QTextEdit()
         self.treatment_text.setReadOnly(True)
-        self.treatment_text.setFont(QFont("Courier", 10))
-        self.treatment_text.setStyleSheet("""
-            QTextEdit {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                padding: 10px;
-            }
-        """)
         self.treatment_text.setPlainText("Capture an image to see treatment recommendations.")
         treatment_layout.addWidget(self.treatment_text)
 
@@ -225,7 +256,7 @@ class PlantDiseaseGUI(QMainWindow):
             self.preview_timer.start(30)  # Update every 30ms (~33 FPS)
         else:
             self.preview_label.setText("Camera not available\n\nUse 'Load Image File' to analyze images")
-            self.preview_label.setStyleSheet("border: 2px solid #e74c3c; background-color: #000000; color: red;")
+            self.preview_label.setStyleSheet("border: 1px solid #dce5df; border-radius: 8px; background-color: #0c110e; color: #e0a13c;")
 
     def update_preview(self):
         """
@@ -359,25 +390,57 @@ class PlantDiseaseGUI(QMainWindow):
 
         if self.database.is_healthy(top_disease):
             self.diagnosis_label.setText(f"✅ {common_name}\n\nConfidence: {confidence_percent:.1f}%")
-            self.diagnosis_label.setStyleSheet("color: #27ae60; padding: 10px; font-size: 14pt;")
+            self.diagnosis_label.setStyleSheet("color: #22996a; padding: 10px; font-size: 14pt;")
         else:
             self.diagnosis_label.setText(f"⚠️  {common_name}\n\nConfidence: {confidence_percent:.1f}%")
-            self.diagnosis_label.setStyleSheet("color: #e74c3c; padding: 10px; font-size: 14pt;")
+            self.diagnosis_label.setStyleSheet("color: #dc2626; padding: 10px; font-size: 14pt;")
 
-        # Show all top predictions
-        predictions_text = "Top 3 Predictions:\n\n"
-        for idx, (disease, conf) in enumerate(predictions, 1):
-            name = self.database.get_common_name(disease)
-            predictions_text += f"{idx}. {name}: {conf*100:.1f}%\n"
-
-        # Get treatment information for top prediction
-        treatment_info = self.database.format_treatment_info(top_disease)
-
-        # Display results
-        full_text = predictions_text + "\n" + treatment_info
-        self.treatment_text.setPlainText(full_text)
+        self.treatment_text.setHtml(self.build_results_html(predictions, top_disease))
 
         self.statusBar.showMessage(f"Analysis complete - {common_name} detected ({confidence_percent:.1f}% confidence)")
+
+    def build_results_html(self, predictions, top_disease):
+        """
+        Build rich HTML for the treatment panel: top-3 confidence bars
+        followed by the treatment card for the top prediction.
+        """
+        html = ['<h3 style="color:#5b6b62;">Top Predictions</h3>']
+        for disease, conf in predictions:
+            name = self.database.get_common_name(disease)
+            pct = conf * 100
+            bar_color = "#22996a" if self.database.is_healthy(disease) else "#d97706"
+            html.append(
+                f'<div style="margin-bottom:6px;">{name} — <b>{pct:.1f}%</b><br>'
+                f'<span style="background-color:{bar_color}; color:{bar_color};">'
+                f'{"█" * max(1, int(pct / 4))}</span></div>'
+            )
+
+        info = self.database.get_treatment(top_disease)
+        if info and not self.database.is_healthy(top_disease):
+            sections = [
+                ("🔍 Symptoms", info.get('symptoms', [])),
+                ("💊 Treatment", info.get('treatments', [])),
+                ("🛡️ Prevention", info.get('prevention', [])),
+            ]
+            html.append(f'<h3 style="color:#5b6b62;">About {info.get("common_name", top_disease)}</h3>')
+            html.append(f'<p>{info.get("description", "")}</p>')
+            severity = info.get('severity', 'unknown')
+            sev_color = {"low": "#22996a", "medium": "#d97706",
+                         "high": "#dc2626", "critical": "#991b1b"}.get(severity, "#5b6b62")
+            html.append(f'<p>Severity: <b style="color:{sev_color};">{severity.upper()}</b></p>')
+            for title, items in sections:
+                if items:
+                    html.append(f'<h4>{title}</h4><ul>')
+                    html.extend(f'<li>{item}</li>' for item in items)
+                    html.append('</ul>')
+        elif self.database.is_healthy(top_disease):
+            html.append('<p style="color:#22996a;"><b>🌿 This leaf looks healthy!</b> '
+                        'Keep up regular watering, good airflow, and periodic checks '
+                        'of leaf undersides to catch problems early.</p>')
+
+        html.append('<p style="color:#5b6b62;"><i>⚠️ Educational use only — for professional '
+                    'diagnosis, consult agricultural extension services.</i></p>')
+        return "".join(html)
 
     def on_analysis_error(self, error_msg):
         """
@@ -432,6 +495,16 @@ def test_gui():
 
         def format_treatment_info(self, label):
             return f"Mock treatment info for {label}"
+
+        def get_treatment(self, label):
+            return {
+                "common_name": self.get_common_name(label),
+                "description": f"Mock description for {label}",
+                "severity": "medium",
+                "symptoms": ["Mock symptom"],
+                "treatments": ["Mock treatment"],
+                "prevention": ["Mock prevention"],
+            }
 
     camera = MockCamera()
     detector = MockDetector()

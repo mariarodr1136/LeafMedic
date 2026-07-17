@@ -5,9 +5,6 @@ __pycache__/
 *.so
 .Python
 
-# Test images (large dataset)
-test_images/
-
 # Virtual environments
 venv/
 env/
