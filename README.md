@@ -16,7 +16,9 @@ It is built as a study in **edge AI deployment constraints**: an 11 MB quantized
 
 > **Note:** The model (~11 MB) downloads once on first visit and is cached afterwards — the page even works offline and can be installed to your phone's home screen.
 
-![plant_interface](https://github.com/user-attachments/assets/b88a5e3d-b727-433a-b9e1-e93642789667)
+<img width="2772" height="1504" alt="Demo" src="https://github.com/user-attachments/assets/f37e3914-394d-4425-a2e0-100fdd1cd5cf" />
+
+<img width="1470" height="792" alt="Screenshot 2026-07-17 at 7 56 57 PM" src="https://github.com/user-attachments/assets/1904791b-f9ef-4298-bdc2-3ee97d777f37" />
 
 ![raspberry_camera](https://github.com/user-attachments/assets/c243f4a5-1a0e-48db-b00f-42197850fbcb)
 
@@ -200,9 +202,15 @@ The desktop and browser stacks are deliberate mirrors of each other — each lay
 
 ---
 
+<img width="1454" height="789" alt="Screenshot 2026-07-17 at 7 53 17 PM" src="https://github.com/user-attachments/assets/b7e7fd1c-bd15-414d-b8cf-3962d081ef66" />
+
+<img width="1470" height="801" alt="Screenshot 2026-07-17 at 7 54 01 PM" src="https://github.com/user-attachments/assets/c1562c65-35bf-4e26-a50c-168ba0d7b0f7" />
+
+
+---
+
 ## Supported Crops & Diseases
 
-![plant_dataset](https://github.com/user-attachments/assets/d8b5b407-6ce5-4f6e-a7d3-cbe942a3c1dd)
 
 | Crop | Classes | Conditions | Pathogen types |
 |---|---|---|---|
