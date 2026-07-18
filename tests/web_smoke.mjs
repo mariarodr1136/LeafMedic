@@ -109,8 +109,17 @@ try {
     () => document.querySelector('.tab').textContent.includes('Identificador'),
     { timeout: 10000 }
   ).catch(() => fail('UI did not switch to Spanish'));
+  // Interface strings are swapped synchronously, but disease names come from
+  // treatments.es.json and repaint only once that fetch resolves. Wait for the
+  // diagnosis itself rather than assuming the two land together.
+  await page.waitForFunction(
+    () => /roya común/i.test(document.getElementById('diagnosis-name').textContent),
+    { timeout: 10000 }
+  ).catch(async () => fail(
+    `expected Spanish diagnosis, got "${await page.innerText('#diagnosis-name')}" — ` +
+    'the knowledge base did not repaint after the language switch'
+  ));
   const esDiagnosis = await page.innerText('#diagnosis-name');
-  if (!/roya común/i.test(esDiagnosis)) fail(`expected Spanish diagnosis, got "${esDiagnosis}"`);
   await page.selectOption('#lang-select', 'en');
   await page.waitForFunction(
     () => document.getElementById('diagnosis-name').textContent.includes('Corn'),
