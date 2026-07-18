@@ -40,23 +40,8 @@
     'Cabbage___Black_Rot': 'img/library/cabbage-black-rot.jpg',
   };
 
-  const HERO_TEXT = {
-    detect: {
-      crumb: 'Disease Identifier',
-      title: 'Plant Disease Identification Tool',
-      copy: "Don't let your crops suffer from disorders and disease damage. Begin treatment with our free plant disease identifier — the AI runs right in your browser, and your photos never leave your device.",
-    },
-    library: {
-      crumb: 'Disease Library',
-      title: 'Plant Disease Library',
-      copy: 'Every condition the LeafMedic model can recognize, with symptoms, treatment, and prevention guidance for each one.',
-    },
-    about: {
-      crumb: 'About',
-      title: 'About LeafMedic',
-      copy: 'An on-device AI plant disease identifier that began life on a Raspberry Pi — now running entirely in your browser.',
-    },
-  };
+  const VIEWS = ['detect', 'library', 'about'];
+  const t = (key) => I18n.t(key);
 
   /* ---------- View tabs ---------- */
   document.querySelectorAll('.tab').forEach((tab) => {
@@ -75,19 +60,24 @@
       }
     });
   });
+  let currentView = 'detect';
   function showView(name) {
-    document.querySelectorAll('.tab').forEach((t) => {
-      const active = t.dataset.view === name;
-      t.classList.toggle('active', active);
-      t.setAttribute('aria-selected', String(active));
+    currentView = VIEWS.includes(name) ? name : 'detect';
+    document.querySelectorAll('.tab').forEach((tab) => {
+      const active = tab.dataset.view === currentView;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', String(active));
     });
-    document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
-    const hero = HERO_TEXT[name] || HERO_TEXT.detect;
-    $('crumb-current').textContent = hero.crumb;
-    $('hero-title').textContent = hero.title;
-    $('hero-copy').textContent = hero.copy;
-    $('hero-cta').hidden = name === 'about';
-    if (name !== 'detect') stopCamera();
+    document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${currentView}`));
+    renderHero();
+    if (currentView !== 'detect') stopCamera();
+  }
+
+  function renderHero() {
+    $('crumb-current').textContent = t(`nav.${currentView}`);
+    $('hero-title').textContent = t(`hero.${currentView}.title`);
+    $('hero-copy').textContent = t(`hero.${currentView}.copy`);
+    $('hero-cta').hidden = currentView === 'about';
   }
 
   /* ---------- Hero CTA ---------- */
@@ -108,12 +98,37 @@
       setTimeout(() => banner.remove(), 600);
       renderLibrary();
       enableInputs();
+      console.log(`[LeafMedic] inference backend: ${LeafModel.getBackend()}`);
+      if (BENCH_MODE) document.body.classList.add('bench-mode');
     } catch (err) {
       console.error(err);
-      $('model-status-title').textContent = 'Failed to load the model';
+      $('model-status-title').textContent = t('model.failed');
       $('model-status-detail').textContent = `${err.message} — check your connection and refresh.`;
       banner.classList.add('error');
     }
+  }
+
+  /* ---------- Language switcher ---------- */
+  function buildLanguageSwitcher() {
+    const select = $('lang-select');
+    I18n.supported().forEach((lang) => {
+      const opt = document.createElement('option');
+      opt.value = lang;
+      opt.textContent = lang.toUpperCase();
+      select.appendChild(opt);
+    });
+    select.value = I18n.getLang();
+    select.addEventListener('change', async () => {
+      I18n.setLang(select.value);
+      // Care guidance is data, not UI chrome: reload the matching knowledge base
+      // and repaint anything already showing translated content.
+      await LeafModel.setLanguage(select.value);
+      renderLibrary();
+      renderHistory();
+      if (lastAnalysis) {
+        renderResults(lastAnalysis.preds, lastAnalysis.thumb, lastAnalysis.quality);
+      }
+    });
   }
 
   let inputsEnabled = false;
@@ -226,14 +241,20 @@
   /* ---------- Analysis & results ---------- */
   const resultsPanel = $('results-panel');
 
+  // Retained so "Why this diagnosis?" can re-run inference on the exact tensor
+  // that produced the current result.
+  let lastAnalysis = null;
+
   async function analyze(source) {
     if (!inputsEnabled) return;
     resultsPanel.classList.add('analyzing');
     try {
       const thumb = makeThumbnail(source, 320);
-      const { preds, leafScore, entropy } = await LeafModel.classify(source, 3);
-      renderResults(preds, thumb, { leafScore, entropy });
-      pushHistory(preds, makeThumbnail(source, 96));
+      const result = await LeafModel.classify(source, 3);
+      lastAnalysis = { ...result, thumb };
+      renderResults(result.preds, thumb, result.quality);
+      pushHistory(result.preds, makeThumbnail(source, 96));
+      if (BENCH_MODE) reportBench(result);
     } catch (err) {
       console.error(err);
       alert(`Analysis failed: ${err.message}`);
@@ -253,39 +274,61 @@
     return canvas.toDataURL('image/jpeg', 0.85);
   }
 
-  function renderResults(preds, thumbUrl, meta) {
+  function renderResults(rawPreds, thumbUrl, quality) {
+    // Re-resolve display names from labels on every render so a language
+    // change repaints existing results instead of keeping the names captured
+    // at analysis time.
+    const preds = rawPreds.map((p) => {
+      const entry = LeafModel.getTreatment(p.label);
+      return { ...p, name: (entry && entry.common_name) || p.name };
+    });
     const top = preds[0];
     const info = LeafModel.getTreatment(top.label);
     const healthy = /healthy/i.test(top.label);
     // Out-of-distribution guard: top confidence too low, prediction spread
     // too flat, or the image barely contains vegetation-colored pixels.
-    const notLeaf = meta && meta.leafScore < 0.12;
-    const lowConfidence = top.confidence < CONFIDENCE_FLOOR ||
-      notLeaf || (meta && meta.entropy > 0.75);
+    const notLeaf = !!(quality && quality.notLeaf);
+    const lowConfidence = notLeaf || top.confidence < CONFIDENCE_FLOOR ||
+      !!(quality && quality.uncertain);
 
     $('results-empty').hidden = true;
     $('results-content').hidden = false;
     $('analyzed-img').src = thumbUrl;
 
-    const note = $('low-confidence-note');
-    note.innerHTML = notLeaf
-      ? 'This image doesn’t look like a close-up photo of a leaf, so the diagnosis below is unreliable. Photograph a single leaf filling most of the frame — the model only knows <strong>tomato, corn, soybean, and cabbage</strong> leaves.'
-      : 'The model isn’t confident about this image. Make sure the photo shows a single leaf, well lit and in focus — and note the model only knows <strong>tomato, corn, soybean, and cabbage</strong> leaves.';
+    $('low-confidence-note').innerHTML = notLeaf ? t('results.notLeaf') : t('results.lowConfidence');
+    $('low-confidence-note').hidden = !lowConfidence;
+
+    // Capture-quality problems are actionable in a way a low score is not:
+    // the fix is "retake the photo like this", so they get their own note.
+    const captureNote = $('capture-note');
+    const captureIssues = [];
+    if (quality && quality.blurry) captureIssues.push(t('quality.blurry'));
+    if (quality && quality.tooDark) captureIssues.push(t('quality.dark'));
+    if (quality && quality.tooBright) captureIssues.push(t('quality.bright'));
+    captureNote.innerHTML = captureIssues.map((m) => `<span>${m}</span>`).join('');
+    captureNote.hidden = captureIssues.length === 0;
 
     const badge = $('diagnosis-badge');
     if (lowConfidence) {
-      badge.textContent = 'Uncertain';
+      badge.textContent = t('results.uncertain');
       badge.className = 'diagnosis-badge uncertain';
     } else if (healthy) {
-      badge.textContent = 'Healthy';
+      badge.textContent = t('results.healthy');
       badge.className = 'diagnosis-badge healthy';
     } else {
-      badge.textContent = (info?.severity || 'disease') + ' severity';
+      badge.textContent = `${info?.severity || 'medium'} ${t('results.severitySuffix')}`;
       badge.className = `diagnosis-badge severity-${info?.severity || 'medium'}`;
     }
     $('diagnosis-name').textContent = top.name;
-    $('diagnosis-sub').textContent = `${(top.confidence * 100).toFixed(1)}% confidence`;
-    $('low-confidence-note').hidden = !lowConfidence;
+    $('diagnosis-sub').textContent =
+      `${(top.confidence * 100).toFixed(1)}% ${t('results.confidenceSuffix')}`;
+
+    // Explanation is only offered for a result worth explaining, and only when
+    // the pixel buffer for this analysis is still around (not a history replay).
+    const explainable = !!(lastAnalysis && lastAnalysis.rgb) && !lowConfidence;
+    $('explain-block').hidden = !explainable;
+    $('explain-result').hidden = true;
+    $('explain-btn').disabled = false;
 
     const bars = $('pred-bars');
     bars.innerHTML = '';
@@ -306,8 +349,8 @@
 
     $('treatment-card').innerHTML = healthy || !info ? (healthy ? `
       <div class="healthy-note">
-        <strong>🌿 This leaf looks healthy!</strong>
-        <p>Keep up regular watering, good airflow, and periodic checks of leaf undersides to catch problems early.</p>
+        <strong>🌿 ${t('results.healthyTitle')}</strong>
+        <p>${t('results.healthyCopy')}</p>
       </div>` : '') : treatmentHTML(info);
 
     resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -316,23 +359,154 @@
   function treatmentHTML(info) {
     const list = (items) => items.map((i) => `<li>${i}</li>`).join('');
     return `
-      <h3 class="section-title">About ${info.common_name}</h3>
+      <h3 class="section-title">${t('treatment.about')} ${info.common_name}</h3>
       <p class="treatment-desc">${info.description}</p>
       <div class="treatment-cols">
         <div class="treatment-col">
-          <h4><span aria-hidden="true">🔍</span> Symptoms</h4>
+          <h4><span aria-hidden="true">🔍</span> ${t('treatment.symptoms')}</h4>
           <ul>${list(info.symptoms || [])}</ul>
         </div>
         <div class="treatment-col">
-          <h4><span aria-hidden="true">💊</span> Treatment</h4>
+          <h4><span aria-hidden="true">💊</span> ${t('treatment.treatment')}</h4>
           <ul>${list(info.treatments || [])}</ul>
         </div>
         <div class="treatment-col">
-          <h4><span aria-hidden="true">🛡️</span> Prevention</h4>
+          <h4><span aria-hidden="true">🛡️</span> ${t('treatment.prevention')}</h4>
           <ul>${list(info.prevention || [])}</ul>
         </div>
       </div>`;
   }
+
+  /* ---------- Explainability: occlusion sensitivity ---------- */
+  // Slides a patch over the image, re-runs inference for each position, and
+  // paints the confidence drop as a heatmap. The model is a fully-quantized
+  // black box with no gradients, so this is the practical alternative to
+  // Grad-CAM: it needs nothing but repeated forward passes.
+  const GRID = 8;
+
+  $('explain-btn').addEventListener('click', async () => {
+    if (!lastAnalysis || !lastAnalysis.rgb) return;
+    const btn = $('explain-btn');
+    const hint = $('explain-hint');
+    btn.disabled = true;
+    hint.textContent = t('results.explaining');
+
+    try {
+      const top = lastAnalysis.preds[0];
+      const classIndex = LeafModel.getLabels().indexOf(top.label);
+      const { drops } = await LeafModel.occlusionMap(lastAnalysis.rgb, classIndex, {
+        gridSize: GRID,
+        onProgress: (frac) => { hint.textContent = `${t('results.explaining')} ${Math.round(frac * 100)}%`; },
+      });
+      drawHeatmap(lastAnalysis.rgb, drops, GRID);
+      $('explain-caption').textContent = t('results.explainCaption');
+      $('explain-result').hidden = false;
+    } catch (err) {
+      console.error(err);
+      hint.textContent = `Could not compute the explanation: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+      if (!$('explain-result').hidden) hint.textContent = t('results.explainHint');
+    }
+  });
+
+  /* Composite the leaf with a warm overlay whose alpha follows the importance
+   * grid, upscaled smoothly so the coarse probe grid reads as a soft heatmap. */
+  function drawHeatmap(rgb, drops, gridSize) {
+    const size = LeafModel.getInputSize();
+    const canvas = $('explain-canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    const base = ctx.createImageData(size, size);
+    for (let p = 0, j = 0; p < size * size; p++) {
+      base.data[p * 4] = rgb[j++];
+      base.data[p * 4 + 1] = rgb[j++];
+      base.data[p * 4 + 2] = rgb[j++];
+      base.data[p * 4 + 3] = 255;
+    }
+    ctx.putImageData(base, 0, 0);
+
+    // Draw the grid into a small offscreen canvas, then let the 2D context
+    // scale it up with its own smoothing — cheaper and softer than
+    // interpolating per pixel in JS.
+    const heat = document.createElement('canvas');
+    heat.width = gridSize;
+    heat.height = gridSize;
+    const hctx = heat.getContext('2d');
+    const hdata = hctx.createImageData(gridSize, gridSize);
+    for (let i = 0; i < drops.length; i++) {
+      const v = Math.min(1, Math.max(0, drops[i]));
+      hdata.data[i * 4] = 255;
+      hdata.data[i * 4 + 1] = Math.round(200 * (1 - v));
+      hdata.data[i * 4 + 2] = Math.round(60 * (1 - v));
+      hdata.data[i * 4 + 3] = Math.round(200 * v);
+    }
+    hctx.putImageData(hdata, 0, 0);
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(heat, 0, 0, gridSize, gridSize, 0, 0, size, size);
+  }
+
+  /* ---------- Benchmark mode (?bench) ---------- */
+  // Turns the README's quoted latency figures into something a visitor can
+  // reproduce on their own hardware.
+  const BENCH_MODE = new URLSearchParams(location.search).has('bench');
+
+  function reportBench(result) {
+    const stats = {
+      backend: LeafModel.getBackend(),
+      inferenceMs: Number(result.inferenceMs.toFixed(1)),
+      crossOriginIsolated: self.crossOriginIsolated,
+      threads: self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 2) : 1,
+      top: result.preds[0].label,
+      confidence: Number(result.preds[0].confidence.toFixed(3)),
+    };
+    console.log('[LeafMedic bench]', stats);
+    window.LEAFMEDIC_BENCH = stats;
+    let el = $('bench-readout');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'bench-readout';
+      el.className = 'bench-readout';
+      document.body.appendChild(el);
+    }
+    el.textContent =
+      `${stats.backend} · ${stats.inferenceMs} ms · ${stats.threads} thread(s)` +
+      `${stats.crossOriginIsolated ? ' · isolated' : ''}`;
+  }
+
+  /* Run N inferences on a fixed sample and report the distribution. Exposed on
+   * window so it can be driven from the console or a headless test. */
+  async function runBenchmark(iterations = 20) {
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = `samples/${SAMPLES[0].file}`;
+    });
+    const times = [];
+    for (let i = 0; i < iterations; i++) {
+      const r = await LeafModel.classify(img, 1);
+      times.push(r.inferenceMs);
+    }
+    times.sort((a, b) => a - b);
+    const summary = {
+      backend: LeafModel.getBackend(),
+      iterations,
+      medianMs: Number(times[Math.floor(times.length / 2)].toFixed(1)),
+      minMs: Number(times[0].toFixed(1)),
+      maxMs: Number(times[times.length - 1].toFixed(1)),
+      threads: self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 2) : 1,
+      crossOriginIsolated: self.crossOriginIsolated,
+    };
+    console.table(summary);
+    window.LEAFMEDIC_BENCH_RESULT = summary;
+    return summary;
+  }
+  window.leafmedicBenchmark = runBenchmark;
 
   /* ---------- History ---------- */
   function getHistory() {
@@ -357,7 +531,11 @@
     const grid = $('history-grid');
     grid.innerHTML = '';
     entries.forEach((entry) => {
-      const { name, confidence, thumb, ts } = entry;
+      const { confidence, thumb, ts } = entry;
+      // Re-resolve the display name from the label so stored history follows
+      // the current language instead of freezing the name at analysis time.
+      const info = entry.label ? LeafModel.getTreatment(entry.label) : null;
+      const name = (info && info.common_name) || entry.name;
       const item = document.createElement('button');
       item.className = 'history-item';
       item.title = 'Show this result again';
@@ -370,7 +548,9 @@
       item.addEventListener('click', () => {
         // Older entries stored only the top prediction — rebuild a preds list.
         const preds = entry.preds || [{ name: entry.name, label: entry.label, confidence: entry.confidence }];
-        renderResults(preds, thumb);
+        // A replay has no pixel buffer, so the explanation button stays hidden.
+        lastAnalysis = null;
+        renderResults(preds, thumb, null);
         resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
       grid.appendChild(item);
@@ -400,7 +580,7 @@
         document.querySelectorAll('.library-card').forEach((card) => {
           card.hidden = plant !== 'All' && card.dataset.plant !== plant;
         });
-        $('matches-label').textContent = `diseases matches “${plant}”`;
+        $('matches-label').textContent = `${t('library.matches')} “${plant}”`;
       });
       filters.appendChild(btn);
     });
@@ -410,6 +590,8 @@
     [...labels].sort().forEach((label) => {
       const info = LeafModel.getTreatment(label);
       if (!info) return;
+      // Filter chips are derived from the label, not the translated name, so
+      // filtering keeps working in every language.
       const plant = label.split('___')[0].replace(/_/g, ' ').replace(/\s*\(.*\)/, '');
       const photo = LIBRARY_IMAGES[label];
       const card = document.createElement('button');
@@ -476,6 +658,9 @@
     navigator.serviceWorker.register('sw.js').catch(() => { /* non-fatal */ });
   }
 
+  I18n.init();
+  buildLanguageSwitcher();
+  renderHero();
   renderHistory();
   boot();
 })();

@@ -1,0 +1,78 @@
+[project]
+name = "leafmedic"
+version = "1.0.0"
+description = "On-device plant disease detection: quantized MobileNet served on Raspberry Pi, desktop, and the browser"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "Maria Rodriguez", email = "mrodr.contact@gmail.com" }]
+keywords = ["edge-ai", "tflite", "onnx", "plant-disease", "raspberry-pi", "computer-vision"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+]
+dependencies = [
+    "numpy",
+    "opencv-python",
+    "PyQt5",
+]
+
+[project.optional-dependencies]
+# Pick one inference runtime: `tensorflow` (desktop) or `litert` (Pi/CI, much smaller)
+tensorflow = ["tensorflow"]
+litert = ["ai-edge-litert"]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+    "onnxruntime",  # cross-runtime parity tests
+]
+train = [
+    "tensorflow>=2.15",
+    "tf2onnx",
+    "onnx",
+    "matplotlib",
+    "scikit-learn",
+]
+
+[project.urls]
+Homepage = "https://github.com/mariarodr1136/LeafMedic"
+Demo = "https://mariarodr1136.github.io/LeafMedic/"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "SIM", # simplify
+]
+ignore = [
+    "E501", # long lines in docstrings/tables; line-length is advisory
+]
+
+[tool.mypy]
+ignore_missing_imports = true       # cv2 and the tflite runtimes ship no stubs
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+
+# PyQt5's bundled stubs place the Qt enum members on nested classes
+# (Qt.AspectRatioMode.KeepAspectRatio) while PyQt5 exposes them on Qt itself at
+# runtime. The flat form is correct in PyQt5; only the stubs disagree.
+[[tool.mypy.overrides]]
+module = "gui_module"
+disable_error_code = ["attr-defined"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

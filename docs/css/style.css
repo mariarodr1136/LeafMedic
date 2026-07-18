@@ -126,6 +126,28 @@ img { max-width: 100%; }
 }
 .search-pill svg { width: 18px; height: 18px; }
 
+/* ---------- Language switcher ---------- */
+.lang-switch {
+  display: flex; align-items: center; gap: 0.4rem;
+  height: 42px; padding: 0 0.7rem; border-radius: 21px;
+  background: #edf4ea; color: var(--blue-muted); cursor: pointer;
+}
+.lang-switch svg {
+  width: 18px; height: 18px; fill: none;
+  stroke: currentColor; stroke-width: 1.6;
+}
+.lang-switch select {
+  border: 0; background: transparent; color: var(--text);
+  font: inherit; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; padding-right: 0.2rem;
+}
+.lang-switch select:focus-visible { outline: 2px solid var(--hero-accent); outline-offset: 3px; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
 /* ---------- Model banner ---------- */
 .model-banner {
   background: var(--cta-grad); color: #fff;
@@ -357,6 +379,55 @@ body:not(.model-ready) .camera-controls { pointer-events: none; opacity: 0.6; }
   background: var(--amber-100); color: var(--text-2);
   border-radius: var(--radius-sm); padding: 0.7rem 0.9rem;
   font-size: 0.88rem; margin-bottom: 1rem;
+}
+
+/* ---------- Capture-quality warnings ---------- */
+.capture-note {
+  display: flex; flex-direction: column; gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+.capture-note span {
+  background: var(--surface-2); color: var(--text-2);
+  border-left: 3px solid var(--amber-500, #e0a531);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.8rem; font-size: 0.85rem;
+}
+
+/* ---------- Explainability heatmap ---------- */
+.explain-block { margin-top: 1.2rem; }
+.btn-explain { font-size: 0.85rem; }
+.btn-explain svg {
+  width: 16px; height: 16px; fill: none;
+  stroke: currentColor; stroke-width: 1.8;
+}
+.btn-explain[disabled] { opacity: 0.6; cursor: progress; }
+.explain-hint {
+  font-size: 0.8rem; color: var(--text-soft); margin: 0.4rem 0 0;
+}
+.explain-result { margin-top: 0.8rem; }
+.explain-canvas-wrap {
+  max-width: 300px; border-radius: var(--radius-sm); overflow: hidden;
+}
+.explain-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+.explain-legend {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-soft);
+}
+.legend-gradient {
+  flex: 1; max-width: 140px; height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg, rgba(255,200,60,0.15), rgba(255,60,20,0.9));
+}
+.explain-caption {
+  font-size: 0.8rem; color: var(--text-soft); margin: 0.5rem 0 0;
+}
+
+/* ---------- Benchmark readout (?bench) ---------- */
+.bench-readout {
+  position: fixed; bottom: 12px; right: 12px; z-index: 60;
+  background: rgba(17, 24, 20, 0.9); color: #d8f3e2;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem; padding: 0.45rem 0.7rem; border-radius: 6px;
+  pointer-events: none;
 }
 
 .section-title {

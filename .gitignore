@@ -26,6 +26,14 @@ Thumbs.db
 
 # Tests / tooling
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 node_modules/
 package.json
 package-lock.json
+
+# Training artifacts (see training/README.md)
+training/data/
+training/runs/
+*.h5
+*.keras

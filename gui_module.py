@@ -10,19 +10,30 @@ Educational Project - SunFounder Electronic Kit
 """
 
 import sys
+
 import cv2
-import numpy as np
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-                            QHBoxLayout, QLabel, QPushButton, QTextEdit,
-                            QGroupBox, QStatusBar, QFileDialog)
-from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
-from PyQt5.QtGui import QImage, QPixmap, QFont
+from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
+from PyQt5.QtGui import QFont, QImage, QPixmap
+from PyQt5.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QStatusBar,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
 
 class AnalysisThread(QThread):
     """
     Worker thread for running ML inference without blocking the GUI.
     """
-    finished = pyqtSignal(object, object)  # Signal: (predictions, inference_time)
+    finished = pyqtSignal(object, object)  # Signal: (predictions, quality_report)
     error = pyqtSignal(str)  # Signal: error_message
 
     def __init__(self, detector, image):
@@ -32,9 +43,11 @@ class AnalysisThread(QThread):
 
     def run(self):
         try:
-            # Run prediction
-            predictions = self.detector.predict_top_n(self.image, n=3)
-            self.finished.emit(predictions, None)
+            # analyze() returns the ranked predictions together with the
+            # out-of-distribution and capture-quality signals, so the UI can
+            # say "retake this photo" instead of a confident wrong answer.
+            report = self.detector.analyze(self.image, n=3)
+            self.finished.emit(report["predictions"], report)
         except Exception as e:
             self.error.emit(str(e))
 
@@ -117,9 +130,9 @@ class PlantDiseaseGUI(QMainWindow):
         main_layout.addWidget(right_panel, stretch=3)
 
         # Status bar
-        self.statusBar = QStatusBar()
-        self.setStatusBar(self.statusBar)
-        self.statusBar.showMessage("Ready")
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("Ready")
 
     def create_left_panel(self):
         """
@@ -282,7 +295,7 @@ class PlantDiseaseGUI(QMainWindow):
         """
         Capture an image and analyze it for plant diseases.
         """
-        self.statusBar.showMessage("Capturing image...")
+        self.status_bar.showMessage("Capturing image...")
         self.capture_button.setEnabled(False)
         QApplication.processEvents()
 
@@ -290,12 +303,12 @@ class PlantDiseaseGUI(QMainWindow):
         if self.camera and self.camera.camera_available:
             image = self.camera.capture_image()
         else:
-            self.statusBar.showMessage("Camera not available")
+            self.status_bar.showMessage("Camera not available")
             self.capture_button.setEnabled(True)
             return
 
         if image is None:
-            self.statusBar.showMessage("Failed to capture image")
+            self.status_bar.showMessage("Failed to capture image")
             self.capture_button.setEnabled(True)
             return
 
@@ -321,7 +334,7 @@ class PlantDiseaseGUI(QMainWindow):
                 # Load image using OpenCV
                 image = cv2.imread(file_path)
                 if image is None:
-                    self.statusBar.showMessage("Failed to load image")
+                    self.status_bar.showMessage("Failed to load image")
                     return
 
                 # Convert BGR to RGB
@@ -332,7 +345,7 @@ class PlantDiseaseGUI(QMainWindow):
                 self.analyze_image(image)
 
             except Exception as e:
-                self.statusBar.showMessage(f"Error loading image: {e}")
+                self.status_bar.showMessage(f"Error loading image: {e}")
 
     def display_captured_image(self, image):
         """
@@ -358,7 +371,7 @@ class PlantDiseaseGUI(QMainWindow):
         """
         Analyze the image using ML model in a separate thread.
         """
-        self.statusBar.showMessage("Analyzing image...")
+        self.status_bar.showMessage("Analyzing image...")
         self.diagnosis_label.setText("🔄 Analyzing... Please wait...")
         self.treatment_text.setPlainText("Running inference...")
         QApplication.processEvents()
@@ -369,7 +382,7 @@ class PlantDiseaseGUI(QMainWindow):
         self.analysis_thread.error.connect(self.on_analysis_error)
         self.analysis_thread.start()
 
-    def on_analysis_finished(self, predictions, _):
+    def on_analysis_finished(self, predictions, report=None):
         """
         Handle completed analysis.
         """
@@ -378,7 +391,7 @@ class PlantDiseaseGUI(QMainWindow):
         if not predictions:
             self.diagnosis_label.setText("❌ No confident predictions\n\nTry with better lighting or a clearer leaf image.")
             self.treatment_text.setPlainText("Unable to identify disease with confidence.\n\nTips:\n• Ensure good lighting\n• Focus on a single leaf\n• Capture clear, close-up images\n• Avoid shadows and glare")
-            self.statusBar.showMessage("Analysis complete - No confident predictions")
+            self.status_bar.showMessage("Analysis complete - No confident predictions")
             return
 
         # Get top prediction
@@ -388,23 +401,59 @@ class PlantDiseaseGUI(QMainWindow):
         common_name = self.database.get_common_name(top_disease)
         confidence_percent = top_confidence * 100
 
-        if self.database.is_healthy(top_disease):
+        # An untrustworthy result is presented as Uncertain rather than as a
+        # diagnosis: a closed-set softmax is always confident about something.
+        trustworthy = report.get("trustworthy", True) if report else True
+
+        if not trustworthy:
+            self.diagnosis_label.setText(
+                f"❓ Uncertain\n\nClosest match: {common_name} ({confidence_percent:.1f}%)"
+            )
+            self.diagnosis_label.setStyleSheet("color: #d97706; padding: 10px; font-size: 14pt;")
+        elif self.database.is_healthy(top_disease):
             self.diagnosis_label.setText(f"✅ {common_name}\n\nConfidence: {confidence_percent:.1f}%")
             self.diagnosis_label.setStyleSheet("color: #22996a; padding: 10px; font-size: 14pt;")
         else:
             self.diagnosis_label.setText(f"⚠️  {common_name}\n\nConfidence: {confidence_percent:.1f}%")
             self.diagnosis_label.setStyleSheet("color: #dc2626; padding: 10px; font-size: 14pt;")
 
-        self.treatment_text.setHtml(self.build_results_html(predictions, top_disease))
+        self.treatment_text.setHtml(self.build_results_html(predictions, top_disease, report))
 
-        self.statusBar.showMessage(f"Analysis complete - {common_name} detected ({confidence_percent:.1f}% confidence)")
+        if trustworthy:
+            self.status_bar.showMessage(
+                f"Analysis complete - {common_name} detected ({confidence_percent:.1f}% confidence)"
+            )
+        else:
+            self.status_bar.showMessage("Analysis complete - result flagged as unreliable")
 
-    def build_results_html(self, predictions, top_disease):
+    def build_quality_html(self, report):
+        """Warning banners for out-of-distribution or poor-quality captures."""
+        if not report or not report.get("warnings"):
+            return ""
+        html = []
+        for warning in report["warnings"]:
+            html.append(
+                '<p style="background-color:#fdf3e3; border-left:3px solid #d97706; '
+                f'padding:6px 10px; margin:4px 0;">⚠️ {warning}</p>'
+            )
+        # The raw numbers make the verdict auditable instead of a black box.
+        html.append(
+            '<p style="color:#5b6b62; font-size:11px;">'
+            f'vegetation {report["leaf_score"]:.0%} · '
+            f'entropy {report["entropy"]:.2f} · '
+            f'sharpness {report["blur_score"]:.0f} · '
+            f'brightness {report["mean_luma"]:.0f}'
+            '</p>'
+        )
+        return "".join(html)
+
+    def build_results_html(self, predictions, top_disease, report=None):
         """
         Build rich HTML for the treatment panel: top-3 confidence bars
         followed by the treatment card for the top prediction.
         """
-        html = ['<h3 style="color:#5b6b62;">Top Predictions</h3>']
+        html = [self.build_quality_html(report)]
+        html.append('<h3 style="color:#5b6b62;">Top Predictions</h3>')
         for disease, conf in predictions:
             name = self.database.get_common_name(disease)
             pct = conf * 100
@@ -449,7 +498,7 @@ class PlantDiseaseGUI(QMainWindow):
         self.capture_button.setEnabled(True)
         self.diagnosis_label.setText(f"❌ Analysis Error\n\n{error_msg}")
         self.treatment_text.setPlainText(f"Error during analysis:\n{error_msg}")
-        self.statusBar.showMessage("Analysis failed")
+        self.status_bar.showMessage("Analysis failed")
 
     def closeEvent(self, event):
         """

@@ -6,8 +6,25 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: Lint & type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install tooling
+        # PyQt5 is installed so mypy sees the same stubs locally and in CI.
+        run: pip install ruff mypy numpy PyQt5
+      - name: Ruff
+        run: ruff check .
+      - name: Mypy
+        run: mypy *.py training/ tools/
+
   python-tests:
-    name: Python tests (data + golden predictions)
+    name: Python tests (data, golden, parity, quality)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +33,9 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install dependencies
-        run: pip install numpy opencv-python-headless ai-edge-litert pytest
+        run: pip install numpy opencv-python-headless ai-edge-litert onnxruntime pytest
+      - name: Generate out-of-distribution negatives
+        run: python3 tests/make_negatives.py
       - name: Run pytest
         run: pytest tests/ -v
 

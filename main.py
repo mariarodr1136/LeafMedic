@@ -13,16 +13,17 @@ https://mariarodr1136.github.io/LeafMedic/
 
 import logging
 import sys
+
 from PyQt5.QtWidgets import QApplication
 
-# Module loggers (ml_module, disease_database) report status at INFO level.
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-
-# Import custom modules
 from camera_module import CameraController
-from ml_module import DiseaseDetector
 from disease_database import TreatmentDatabase
 from gui_module import PlantDiseaseGUI
+from ml_module import DiseaseDetector
+
+# Module loggers (ml_module, disease_database) report status at INFO level.
+# They only log inside setup()/load(), so configuring after import is safe.
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 # Global references for cleanup
 camera = None

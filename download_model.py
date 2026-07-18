@@ -6,7 +6,6 @@ This script provides instructions and utilities for obtaining a TFLite model.
 """
 
 import os
-import sys
 
 MODEL_INFO = """
 ========================================

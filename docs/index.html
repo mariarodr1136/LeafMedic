@@ -25,7 +25,7 @@
 </head>
 <body>
   <!-- Announcement bar -->
-  <div class="promo-bar">Identify, Treat &amp; Grow Healthy Crops with LeafMedic!</div>
+  <div class="promo-bar" data-i18n="promo">Identify, Treat &amp; Grow Healthy Crops with LeafMedic!</div>
 
   <!-- Navigation -->
   <header class="site-nav">
@@ -35,14 +35,16 @@
         <span>Leaf<em>Medic</em></span>
       </a>
       <nav class="tabs" role="tablist" aria-label="Main sections">
-        <button class="tab active" role="tab" data-view="detect" aria-selected="true">Disease Identifier</button>
-        <button class="tab" role="tab" data-view="library" aria-selected="false">Disease Library</button>
-        <button class="tab" role="tab" data-view="about" aria-selected="false">About</button>
+        <button class="tab active" role="tab" data-view="detect" aria-selected="true" data-i18n="nav.detect">Disease Identifier</button>
+        <button class="tab" role="tab" data-view="library" aria-selected="false" data-i18n="nav.library">Disease Library</button>
+        <button class="tab" role="tab" data-view="about" aria-selected="false" data-i18n="nav.about">About</button>
       </nav>
       <div class="nav-right">
-        <div class="search-pill" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5" stroke-linecap="round"/></svg>
-        </div>
+        <label class="lang-switch">
+          <span class="sr-only" data-i18n="lang.label">Language</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"/></svg>
+          <select id="lang-select" aria-label="Language"></select>
+        </label>
       </div>
     </div>
   </header>
@@ -52,8 +54,8 @@
     <div class="model-banner-inner">
       <div class="spinner" aria-hidden="true"></div>
       <div class="model-banner-text">
-        <strong id="model-status-title">Loading AI model…</strong>
-        <span id="model-status-detail">Downloading once (~12 MB) — cached for future visits</span>
+        <strong id="model-status-title" data-i18n="model.loading">Loading AI model…</strong>
+        <span id="model-status-detail" data-i18n="model.loadingDetail">Downloading once (~12 MB) — cached for future visits</span>
       </div>
       <div class="progress-track" id="model-progress-track"><div class="progress-fill" id="model-progress"></div></div>
     </div>
@@ -72,7 +74,7 @@
         <p id="hero-copy">Don't let your crops suffer from disorders and disease damage. Begin treatment with our free plant disease identifier — the AI runs right in your browser, and your photos never leave your device.</p>
         <button class="btn-cta" id="hero-cta">
           <svg viewBox="0 0 24 24"><path d="M4 7.5h3l1.5-2.5h7L17 7.5h3A1.5 1.5 0 0 1 21.5 9v9a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>
-          Diagnose a plant
+          <span data-i18n="hero.cta">Diagnose a plant</span>
         </button>
       </div>
       <div class="hero-art" aria-hidden="true">
@@ -158,21 +160,21 @@
           <div class="input-tabs" role="tablist" aria-label="Image source">
             <button class="input-tab active" data-mode="samples" role="tab" aria-selected="true">
               <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
-              Samples
+              <span data-i18n="input.samples">Samples</span>
             </button>
             <button class="input-tab" data-mode="upload" role="tab" aria-selected="false">
               <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V15" stroke-linecap="round"/></svg>
-              Upload
+              <span data-i18n="input.upload">Upload</span>
             </button>
             <button class="input-tab" data-mode="camera" role="tab" aria-selected="false">
               <svg viewBox="0 0 24 24"><path d="M4 7.5h3l1.5-2.5h7L17 7.5h3A1.5 1.5 0 0 1 21.5 9v9a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>
-              Camera
+              <span data-i18n="input.camera">Camera</span>
             </button>
           </div>
 
           <!-- Samples mode -->
           <div class="input-mode active" id="mode-samples">
-            <p class="mode-hint">No leaf handy? Try one of these real test photos:</p>
+            <p class="mode-hint" data-i18n="samples.hint">No leaf handy? Try one of these real test photos:</p>
             <div class="sample-grid" id="sample-grid"></div>
           </div>
 
@@ -180,8 +182,8 @@
           <div class="input-mode" id="mode-upload">
             <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a leaf photo">
               <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V15" stroke-linecap="round"/></svg>
-              <strong>Drop a leaf photo here</strong>
-              <span>or click to browse · you can also paste from clipboard</span>
+              <strong data-i18n="upload.drop">Drop a leaf photo here</strong>
+              <span data-i18n="upload.browse">or click to browse · you can also paste from clipboard</span>
               <input type="file" id="file-input" accept="image/*" hidden>
             </div>
           </div>
@@ -192,18 +194,18 @@
               <video id="camera-video" autoplay playsinline muted></video>
               <div class="camera-placeholder" id="camera-placeholder">
                 <svg viewBox="0 0 24 24"><path d="M4 7.5h3l1.5-2.5h7L17 7.5h3A1.5 1.5 0 0 1 21.5 9v9a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                <p id="camera-message">Camera is off</p>
-                <button class="btn btn-primary" id="camera-start">Enable camera</button>
+                <p id="camera-message" data-i18n="camera.off">Camera is off</p>
+                <button class="btn btn-primary" id="camera-start" data-i18n="camera.enable">Enable camera</button>
               </div>
             </div>
             <div class="camera-controls" id="camera-controls" hidden>
               <button class="btn btn-ghost" id="camera-flip" title="Switch camera">
                 <svg viewBox="0 0 24 24"><path d="M16.5 4.5 19 7l-2.5 2.5M19 7H8.5A4.5 4.5 0 0 0 4 11.5M7.5 19.5 5 17l2.5-2.5M5 17h10.5a4.5 4.5 0 0 0 4.5-4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Flip
+                <span data-i18n="camera.flip">Flip</span>
               </button>
               <button class="btn btn-primary btn-capture" id="camera-capture">
                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none"/></svg>
-                Capture &amp; Analyze
+                <span data-i18n="camera.capture">Capture &amp; Analyze</span>
               </button>
             </div>
           </div>
@@ -212,8 +214,8 @@
         <div class="panel results-panel" id="results-panel" aria-live="polite">
           <div class="results-empty" id="results-empty">
             <svg viewBox="0 0 24 24"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Z"/><path d="M12 7v11" stroke-linecap="round"/></svg>
-            <h2>Pick an image to begin</h2>
-            <p>Choose a sample, upload a photo, or use your camera. The diagnosis runs entirely on your device — your photos never leave your browser.</p>
+            <h2 data-i18n="results.emptyTitle">Pick an image to begin</h2>
+            <p data-i18n="results.emptyCopy">Choose a sample, upload a photo, or use your camera. The diagnosis runs entirely on your device — your photos never leave your browser.</p>
           </div>
 
           <div class="results-content" id="results-content" hidden>
@@ -227,21 +229,41 @@
             </div>
 
             <div class="low-confidence-note" id="low-confidence-note" hidden></div>
+            <div class="capture-note" id="capture-note" hidden></div>
 
-            <h3 class="section-title">Confidence</h3>
+            <h3 class="section-title" data-i18n="results.confidence">Confidence</h3>
             <div class="pred-bars" id="pred-bars"></div>
+
+            <div class="explain-block" id="explain-block">
+              <button class="btn btn-ghost btn-explain" id="explain-btn">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5" stroke-linecap="round"/></svg>
+                <span data-i18n="results.explain">Why this diagnosis?</span>
+              </button>
+              <p class="explain-hint" id="explain-hint" data-i18n="results.explainHint">Highlights the leaf regions the model relied on.</p>
+              <div class="explain-result" id="explain-result" hidden>
+                <div class="explain-canvas-wrap">
+                  <canvas id="explain-canvas" width="300" height="300" aria-label="Occlusion sensitivity heatmap"></canvas>
+                </div>
+                <div class="explain-legend">
+                  <span data-i18n="results.legendLow">less important</span>
+                  <div class="legend-gradient" aria-hidden="true"></div>
+                  <span data-i18n="results.legendHigh">more important</span>
+                </div>
+                <p class="explain-caption" id="explain-caption"></p>
+              </div>
+            </div>
 
             <div id="treatment-card"></div>
 
-            <p class="disclaimer">⚠️ Educational demo only — not a substitute for professional agronomic advice.</p>
+            <p class="disclaimer" data-i18n="results.disclaimer">⚠️ Educational demo only — not a substitute for professional agronomic advice.</p>
           </div>
         </div>
       </div>
 
       <div class="history-block" id="history-block" hidden>
         <div class="history-head">
-          <h3 class="section-title">Recent analyses</h3>
-          <button class="btn-link" id="history-clear">Clear</button>
+          <h3 class="section-title" data-i18n="history.title">Recent analyses</h3>
+          <button class="btn-link" id="history-clear" data-i18n="history.clear">Clear</button>
         </div>
         <div class="history-grid" id="history-grid"></div>
       </div>
@@ -262,7 +284,9 @@
         <h2>About LeafMedic</h2>
         <p>LeafMedic identifies plant diseases from a photo of a leaf using a MobileNetV2 neural network trained on the PlantVillage dataset. It recognizes <strong>16 conditions across 4 crops</strong>: tomato, corn (maize), soybean, and cabbage.</p>
         <h3>Runs entirely in your browser</h3>
-        <p>The quantized model (11 MB) is downloaded once and executed on your device with ONNX Runtime Web (WebAssembly). No photo you analyze is ever uploaded anywhere — there is no server.</p>
+        <p>The quantized model (11 MB) is downloaded once and executed on your device with ONNX Runtime Web — using WebGPU where your browser supports it, and WebAssembly everywhere else. No photo you analyze is ever uploaded anywhere — there is no server.</p>
+        <h3>It tells you when it isn't sure</h3>
+        <p>A classifier with a fixed list of diseases will always name one, even for a photo of the sky. LeafMedic checks whether the image actually looks like a leaf, how spread out the prediction is, and whether the photo is sharp and well exposed — and reports <em>Uncertain</em> rather than guessing. The <strong>Why this diagnosis?</strong> button shows which parts of the leaf the model relied on.</p>
         <h3>It started on a Raspberry Pi</h3>
         <p>LeafMedic began as a Raspberry Pi 4 project with a 5 MP camera module and a PyQt5 interface. That desktop app still lives in the repository and now works with any webcam — this page is the no-hardware-required version.</p>
         <h3>Tips for good results</h3>
@@ -343,7 +367,10 @@
 
   <canvas id="work-canvas" hidden></canvas>
 
-  <script src="vendor/ort.wasm.min.js"></script>
+  <!-- The ONNX Runtime bundle is chosen at runtime (WebGPU vs WASM) and
+       injected by inference.js, so only the needed binary is downloaded. -->
+  <script src="js/quality.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/inference.js"></script>
   <script src="js/app.js"></script>
 </body>

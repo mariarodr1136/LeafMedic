@@ -16,10 +16,80 @@ import os
 import time
 from typing import Any
 
-import numpy as np
 import cv2
+import numpy as np
+
+import image_quality
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_interpreter_class() -> Any:
+    """Return whichever TFLite-compatible Interpreter class is installed.
+
+    Probing at runtime is what lets the same file run under a 500 MB
+    TensorFlow install on a laptop and a few-megabyte LiteRT wheel on a
+    Raspberry Pi, with no conditional imports at the call site.
+    """
+    try:
+        from ai_edge_litert.interpreter import Interpreter
+        return Interpreter
+    except ImportError:
+        pass
+    try:
+        import tensorflow as tf
+        return tf.lite.Interpreter
+    except ImportError:
+        pass
+    try:
+        import tflite_runtime.interpreter as tflite
+        return tflite.Interpreter
+    except ImportError:
+        return None
+
+
+def load_interpreter(model_path: str) -> Any:
+    """Build an allocated interpreter for a TFLite model.
+
+    Retries with the default delegates disabled if the first attempt fails.
+    XNNPACK is enabled by default and accelerates most graphs, but it refuses
+    to prepare some freshly quantized ones — a model straight out of
+    training/train.py hits this on the CAST op that fronts its uint8 input.
+    The model is fine; only the delegate is unhappy, so falling back to the
+    plain kernels loads it correctly (just without the speedup).
+    """
+    interpreter_class = resolve_interpreter_class()
+    if interpreter_class is None:
+        raise ImportError(
+            "No TFLite interpreter found. Install one of: "
+            "ai-edge-litert, tensorflow, tflite-runtime"
+        )
+
+    try:
+        interpreter = interpreter_class(model_path=model_path)
+        interpreter.allocate_tensors()
+        return interpreter
+    except (RuntimeError, ValueError) as err:
+        logger.warning("⚠ Default delegates failed (%s); retrying without them", err)
+
+    resolver_type = None
+    for module_name in ("ai_edge_litert.interpreter", "tensorflow.lite"):
+        try:
+            module = __import__(module_name, fromlist=["OpResolverType"])
+            resolver_type = module.OpResolverType.BUILTIN_WITHOUT_DEFAULT_DELEGATES
+            break
+        except (ImportError, AttributeError):
+            continue
+
+    if resolver_type is None:
+        raise RuntimeError("interpreter failed to allocate and delegates cannot be disabled")
+
+    interpreter = interpreter_class(
+        model_path=model_path, experimental_op_resolver_type=resolver_type
+    )
+    interpreter.allocate_tensors()
+    logger.info("✓ Loaded without default delegates")
+    return interpreter
 
 
 class DiseaseDetector:
@@ -43,9 +113,11 @@ class DiseaseDetector:
         self.model_path = os.path.join(self.base_dir, model_file)
         self.labels_path = os.path.join(self.base_dir, labels_file)
 
-        self.interpreter = None
-        self.input_details = None
-        self.output_details = None
+        # Typed as Any: the concrete interpreter class comes from whichever
+        # TFLite-compatible runtime import succeeds in setup().
+        self.interpreter: Any = None
+        self.input_details: Any = None
+        self.output_details: Any = None
         self.labels: list[str] = []
         self.model_loaded = False
 
@@ -61,29 +133,17 @@ class DiseaseDetector:
             True if successful, False otherwise.
         """
         try:
-            # Try importing a TFLite-compatible interpreter, newest first
-            try:
-                from ai_edge_litert.interpreter import Interpreter
-                self.Interpreter = Interpreter
-            except ImportError:
-                try:
-                    import tensorflow as tf
-                    self.Interpreter = tf.lite.Interpreter
-                except ImportError:
-                    try:
-                        import tflite_runtime.interpreter as tflite
-                        self.Interpreter = tflite.Interpreter
-                    except ImportError:
-                        logger.error("✗ No TFLite interpreter found! "
-                                     "Install one of: ai-edge-litert, tensorflow, tflite-runtime")
-                        return False
+            if resolve_interpreter_class() is None:
+                logger.error("✗ No TFLite interpreter found! "
+                             "Install one of: ai-edge-litert, tensorflow, tflite-runtime")
+                return False
 
             # Load labels
             if not os.path.exists(self.labels_path):
                 logger.error("✗ Labels file not found at %s", self.labels_path)
                 return False
 
-            with open(self.labels_path, 'r') as f:
+            with open(self.labels_path) as f:
                 self.labels = [line.strip() for line in f.readlines()]
             logger.info("✓ Loaded %d class labels", len(self.labels))
 
@@ -93,8 +153,7 @@ class DiseaseDetector:
                              "(see download_model.py for instructions)", self.model_path)
                 return False
 
-            self.interpreter = self.Interpreter(model_path=self.model_path)
-            self.interpreter.allocate_tensors()
+            self.interpreter = load_interpreter(self.model_path)
 
             # Get input and output tensor details
             self.input_details = self.interpreter.get_input_details()
@@ -174,6 +233,47 @@ class DiseaseDetector:
 
         return image
 
+    def predict_probabilities(self, image: np.ndarray) -> tuple[np.ndarray, float]:
+        """
+        Run inference and return the full probability vector.
+
+        Unlike predict(), nothing is filtered out — callers that need the whole
+        distribution (entropy, benchmarking, occlusion maps) use this.
+
+        Args:
+            image: Input image (any size; will be preprocessed).
+
+        Returns:
+            (probabilities, inference_milliseconds). Probabilities is empty
+            when the model is not loaded or inference failed.
+        """
+        if not self.model_loaded:
+            logger.error("Model not loaded. Call setup() first.")
+            return np.array([], dtype=np.float32), 0.0
+
+        try:
+            start_time = time.time()
+
+            preprocessed = self.preprocess_image(image)
+            self.interpreter.set_tensor(self.input_details[0]['index'], preprocessed)
+            self.interpreter.invoke()
+            output_data = self.interpreter.get_tensor(self.output_details[0]['index'])
+
+            predictions = output_data[0]
+
+            # Fully-integer model: rescale uint8 scores to [0, 1] probabilities.
+            if predictions.dtype == np.uint8:
+                predictions = predictions.astype(np.float32) / 255.0
+
+            inference_time = (time.time() - start_time) * 1000
+            logger.debug("Inference time: %.1fms", inference_time)
+
+            return predictions, inference_time
+
+        except Exception:
+            logger.exception("Error during prediction")
+            return np.array([], dtype=np.float32), 0.0
+
     def predict(self, image: np.ndarray) -> list[tuple[str, float]]:
         """
         Run inference on an image.
@@ -182,50 +282,58 @@ class DiseaseDetector:
             image: Input image (any size; will be preprocessed).
 
         Returns:
-            List of (class_label, confidence) tuples, sorted by confidence.
+            List of (class_label, confidence) tuples above the confidence
+            threshold, sorted by confidence.
         """
-        if not self.model_loaded:
-            logger.error("Model not loaded. Call setup() first.")
-            return []
+        predictions, _ = self.predict_probabilities(image)
 
-        try:
-            # Start timing
-            start_time = time.time()
+        results = [
+            (self.labels[i], float(confidence))
+            for i, confidence in enumerate(predictions)
+            if i < len(self.labels) and confidence >= self.confidence_threshold
+        ]
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results
 
-            # Preprocess image
-            preprocessed = self.preprocess_image(image)
+    def analyze(self, image: np.ndarray, n: int = 3) -> dict[str, Any]:
+        """
+        Diagnose an image and judge whether the diagnosis can be trusted.
 
-            # Run inference
-            self.interpreter.set_tensor(self.input_details[0]['index'], preprocessed)
-            self.interpreter.invoke()
-            output_data = self.interpreter.get_tensor(self.output_details[0]['index'])
+        This is the desktop counterpart of the browser's classify() + quality
+        guard: it pairs the ranked predictions with vegetation coverage,
+        predictive entropy, and capture-quality metrics, so the GUI can
+        downgrade a confident-looking wrong answer to "Uncertain".
 
-            # Get predictions
-            predictions = output_data[0]
+        Args:
+            image: Input image (BGR from OpenCV, or RGB — see ``bgr``).
+            n: Number of ranked predictions to return.
 
-            # Convert uint8 output to float probabilities if needed
-            if predictions.dtype == np.uint8:
-                predictions = predictions.astype(np.float32) / 255.0
+        Returns:
+            Dict with ``predictions`` (top-n label/confidence tuples),
+            ``inference_ms``, and every key from image_quality.assess().
+        """
+        probs, inference_ms = self.predict_probabilities(image)
 
-            # Calculate inference time
-            inference_time = (time.time() - start_time) * 1000  # Convert to ms
+        rgb = image
+        if len(image.shape) == 3 and image.shape[2] == 3:
+            rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        rgb = cv2.resize(rgb, self.input_size)
 
-            # Create list of (label, confidence) tuples
-            results = []
-            for i, confidence in enumerate(predictions):
-                if i < len(self.labels) and confidence >= self.confidence_threshold:
-                    results.append((self.labels[i], float(confidence)))
+        report = image_quality.assess(
+            rgb,
+            probs if probs.size else None,
+            confidence_threshold=self.confidence_threshold,
+        )
 
-            # Sort by confidence (highest first)
-            results.sort(key=lambda x: x[1], reverse=True)
+        ranked = sorted(
+            ((self.labels[i], float(c)) for i, c in enumerate(probs) if i < len(self.labels)),
+            key=lambda x: x[1],
+            reverse=True,
+        )[:n]
 
-            logger.debug("Inference time: %.1fms", inference_time)
-
-            return results
-
-        except Exception:
-            logger.exception("Error during prediction")
-            return []
+        report["predictions"] = ranked
+        report["inference_ms"] = inference_ms
+        return report
 
     def predict_top_n(self, image: np.ndarray, n: int = 3) -> list[tuple[str, float]]:
         """

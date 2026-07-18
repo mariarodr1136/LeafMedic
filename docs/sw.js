@@ -7,15 +7,18 @@
  * same-origin, so require-corp is safe here. */
 'use strict';
 
-const CACHE = 'leafmedic-v3';
+const CACHE = 'leafmedic-v4';
 const SHELL = [
   '.',
   'index.html',
   'css/style.css',
   'js/app.js',
   'js/inference.js',
+  'js/quality.js',
+  'js/i18n.js',
   'data/labels.json',
   'data/treatments.json',
+  'data/treatments.es.json',
   'fonts/nunito-latin.woff2',
   'fonts/outfit-latin.woff2',
   'icons/icon.svg',

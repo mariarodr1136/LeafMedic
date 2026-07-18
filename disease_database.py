@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class TreatmentDatabase:
             True if successful, False otherwise.
         """
         try:
-            with open(self.data_path, 'r') as f:
+            with open(self.data_path) as f:
                 self.treatments = json.load(f)
             self.loaded = True
             logger.info("✓ Loaded %d disease treatments from database", len(self.treatments))
@@ -60,7 +60,7 @@ class TreatmentDatabase:
         self.loaded = False
         return False
 
-    def get_treatment(self, class_label: str) -> Optional[dict[str, Any]]:
+    def get_treatment(self, class_label: str) -> dict[str, Any] | None:
         """
         Get treatment information for a specific disease class.
 

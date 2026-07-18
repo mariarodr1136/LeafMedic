@@ -9,7 +9,10 @@ so the app runs on laptops and desktops too.
 """
 
 import time
+from typing import Any
+
 import numpy as np
+
 
 class CameraController:
     """
@@ -30,8 +33,9 @@ class CameraController:
         """
         self.preview_size = preview_size
         self.capture_size = capture_size
-        self.camera = None
-        self.webcam = None
+        # Typed as Any: Picamera2 / cv2.VideoCapture are optional imports.
+        self.camera: Any = None
+        self.webcam: Any = None
         self.backend = None
         self.camera_available = False
         self.preview_config = None
@@ -196,7 +200,7 @@ class CameraController:
                 self.camera.stop()
                 self.camera.configure(self.preview_config)
                 self.camera.start()
-            except:
+            except Exception:
                 pass
             return None
 
