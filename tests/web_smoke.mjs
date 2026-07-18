@@ -59,6 +59,8 @@ try {
   if (!['wasm', 'webgpu'].includes(backend)) fail(`unexpected backend "${backend}"`);
 
   // --- A known sample produces its known diagnosis -------------------------
+  // The diagnosis tool lives on its own view behind the "Diagnose Plant" tab.
+  await page.click('button.tab[data-view="diagnose"]');
   await page.click('.sample-item >> nth=0');
   await page.waitForFunction(() => !document.getElementById('results-content').hidden,
     { timeout: 60000 }).catch(() => fail('results never rendered'));
@@ -128,8 +130,9 @@ try {
 
   // --- Library renders cards and the modal opens ---------------------------
   await page.click('button.tab:has-text("Disease Library")');
+  // 16 classes minus corn lethal necrosis, which has no photo and no card.
   const cards = await page.locator('.library-card').count();
-  if (cards < 16) fail(`expected 16 library cards, got ${cards}`);
+  if (cards < 15) fail(`expected 15 library cards, got ${cards}`);
   await page.click('.library-card >> nth=0');
   if (await page.locator('#disease-modal').isHidden()) fail('modal did not open');
   await page.keyboard.press('Escape');

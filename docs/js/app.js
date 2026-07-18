@@ -20,8 +20,8 @@
   const CONFIDENCE_FLOOR = 0.3;
 
   // Library card photos. Sources and licenses: docs/img/CREDITS.md
-  // (Corn lethal necrosis has no openly-licensed photo yet — it falls back
-  // to the leaf placeholder automatically.)
+  // (Corn lethal necrosis has no openly-licensed photo yet, so it is left out
+  // of the library grid — the model can still diagnose it.)
   const LIBRARY_IMAGES = {
     'Tomato___healthy': 'img/library/tomato-healthy.jpg',
     'Tomato___Septoria_leaf_spot': 'img/library/tomato-septoria-leaf-spot.jpg',
@@ -40,7 +40,7 @@
     'Cabbage___Black_Rot': 'img/library/cabbage-black-rot.jpg',
   };
 
-  const VIEWS = ['detect', 'library', 'about'];
+  const VIEWS = ['detect', 'diagnose', 'library', 'about'];
   const t = (key) => I18n.t(key);
 
   /* ---------- View tabs ---------- */
@@ -50,14 +50,13 @@
   $('brand-link').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); });
   $('crumb-home').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); });
   $('footer-brand-link').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-  document.querySelectorAll('.footer-col a[data-goto]').forEach((a) => {
-    a.addEventListener('click', (e) => {
+  // Footer links and the home page's "diagnose now" CTA jump between views
+  // the same way.
+  document.querySelectorAll('[data-goto]').forEach((el) => {
+    el.addEventListener('click', (e) => {
       e.preventDefault();
-      showView(a.dataset.goto);
+      showView(el.dataset.goto);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      if (a.classList.contains('js-scroll-tool')) {
-        setTimeout(() => $('detect-tool').scrollIntoView({ behavior: 'smooth' }), 50);
-      }
     });
   });
   let currentView = 'detect';
@@ -70,19 +69,19 @@
     });
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${currentView}`));
     renderHero();
-    if (currentView !== 'detect') stopCamera();
+    if (currentView !== 'diagnose') stopCamera();
   }
 
   function renderHero() {
     $('crumb-current').textContent = t(`nav.${currentView}`);
     $('hero-title').textContent = t(`hero.${currentView}.title`);
     $('hero-copy').textContent = t(`hero.${currentView}.copy`);
-    $('hero-cta').hidden = currentView === 'about';
+    $('hero-cta').hidden = currentView === 'about' || currentView === 'diagnose';
   }
 
   /* ---------- Hero CTA ---------- */
   $('hero-cta').addEventListener('click', () => {
-    showView('detect');
+    showView('diagnose');
     $('detect-tool').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
@@ -245,6 +244,13 @@
   // that produced the current result.
   let lastAnalysis = null;
 
+  // Out-of-distribution guard: top confidence too low, prediction spread
+  // too flat, or the image barely contains vegetation-colored pixels.
+  function unreliableResult(preds, quality) {
+    return !!(quality && (quality.notLeaf || quality.uncertain)) ||
+      preds[0].confidence < CONFIDENCE_FLOOR;
+  }
+
   async function analyze(source) {
     if (!inputsEnabled) return;
     resultsPanel.classList.add('analyzing');
@@ -253,7 +259,10 @@
       const result = await LeafModel.classify(source, 3);
       lastAnalysis = { ...result, thumb };
       renderResults(result.preds, thumb, result.quality);
-      pushHistory(result.preds, makeThumbnail(source, 96));
+      // An unreliable result is stored flagged, so history shows it as
+      // "Uncertain" instead of presenting the class name as a diagnosis.
+      pushHistory(result.preds, makeThumbnail(source, 96),
+        unreliableResult(result.preds, result.quality));
       if (BENCH_MODE) reportBench(result);
     } catch (err) {
       console.error(err);
@@ -285,11 +294,8 @@
     const top = preds[0];
     const info = LeafModel.getTreatment(top.label);
     const healthy = /healthy/i.test(top.label);
-    // Out-of-distribution guard: top confidence too low, prediction spread
-    // too flat, or the image barely contains vegetation-colored pixels.
     const notLeaf = !!(quality && quality.notLeaf);
-    const lowConfidence = notLeaf || top.confidence < CONFIDENCE_FLOOR ||
-      !!(quality && quality.uncertain);
+    const lowConfidence = unreliableResult(preds, quality);
 
     $('results-empty').hidden = true;
     $('results-content').hidden = false;
@@ -319,8 +325,10 @@
       badge.textContent = `${info?.severity || 'medium'} ${t('results.severitySuffix')}`;
       badge.className = `diagnosis-badge severity-${info?.severity || 'medium'}`;
     }
-    $('diagnosis-name').textContent = top.name;
-    $('diagnosis-sub').textContent =
+    // An unreliable result shows no diagnosis at all: naming a class with a
+    // confidence next to a warning still reads as an answer.
+    $('diagnosis-name').textContent = lowConfidence ? t('results.noDiagnosis') : top.name;
+    $('diagnosis-sub').textContent = lowConfidence ? '' :
       `${(top.confidence * 100).toFixed(1)}% ${t('results.confidenceSuffix')}`;
 
     // Explanation is only offered for a result worth explaining, and only when
@@ -330,9 +338,11 @@
     $('explain-result').hidden = true;
     $('explain-btn').disabled = false;
 
+    $('confidence-title').hidden = lowConfidence;
     const bars = $('pred-bars');
     bars.innerHTML = '';
-    preds.forEach(({ name, confidence, label }) => {
+    const barPreds = lowConfidence ? [] : preds;
+    barPreds.forEach(({ name, confidence, label }) => {
       const pct = (confidence * 100).toFixed(1);
       const isHealthy = /healthy/i.test(label);
       const row = document.createElement('div');
@@ -347,7 +357,7 @@
       );
     });
 
-    $('treatment-card').innerHTML = healthy || !info ? (healthy ? `
+    $('treatment-card').innerHTML = lowConfidence || healthy || !info ? (!lowConfidence && healthy ? `
       <div class="healthy-note">
         <strong>🌿 ${t('results.healthyTitle')}</strong>
         <p>${t('results.healthyCopy')}</p>
@@ -512,13 +522,13 @@
   function getHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
   }
-  function pushHistory(preds, thumbUrl) {
+  function pushHistory(preds, thumbUrl, uncertain) {
     const top = preds[0];
     const entries = getHistory();
     entries.unshift({
       name: top.name, label: top.label, confidence: top.confidence,
       preds: preds.map(({ name, label, confidence }) => ({ name, label, confidence })),
-      thumb: thumbUrl, ts: Date.now(),
+      uncertain: !!uncertain, thumb: thumbUrl, ts: Date.now(),
     });
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, HISTORY_MAX)));
@@ -536,21 +546,27 @@
       // the current language instead of freezing the name at analysis time.
       const info = entry.label ? LeafModel.getTreatment(entry.label) : null;
       const name = (info && info.common_name) || entry.name;
+      const when = new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
       const item = document.createElement('button');
       item.className = 'history-item';
       item.title = 'Show this result again';
+      // An uncertain analysis is listed as such — no class name or confidence,
+      // which would read as a diagnosis.
       item.innerHTML = `
         <img src="${thumb}" alt="">
         <div class="history-meta">
-          <strong>${name}</strong>
-          <span>${(confidence * 100).toFixed(0)}% · ${new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+          ${entry.uncertain
+            ? `<strong>${t('results.uncertain')}</strong>
+          <span>${when}</span>`
+            : `<strong>${name}</strong>
+          <span>${(confidence * 100).toFixed(0)}% · ${when}</span>`}
         </div>`;
       item.addEventListener('click', () => {
         // Older entries stored only the top prediction — rebuild a preds list.
         const preds = entry.preds || [{ name: entry.name, label: entry.label, confidence: entry.confidence }];
         // A replay has no pixel buffer, so the explanation button stays hidden.
         lastAnalysis = null;
-        renderResults(preds, thumb, null);
+        renderResults(preds, thumb, entry.uncertain ? { uncertain: true } : null);
         resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
       grid.appendChild(item);
@@ -562,9 +578,6 @@
   });
 
   /* ---------- Disease library ---------- */
-  const LEAF_PLACEHOLDER = `
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Z"/><path d="M12 7v11" stroke-linecap="round"/></svg>`;
-
   function renderLibrary() {
     const labels = LeafModel.getLabels();
     const plants = [...new Set(labels.map((l) => l.split('___')[0].replace(/_/g, ' ').replace(/\s*\(.*\)/, '')))].sort();
@@ -589,18 +602,16 @@
     grid.innerHTML = '';
     [...labels].sort().forEach((label) => {
       const info = LeafModel.getTreatment(label);
-      if (!info) return;
+      const photo = LIBRARY_IMAGES[label];
+      if (!info || !photo) return;
       // Filter chips are derived from the label, not the translated name, so
       // filtering keeps working in every language.
       const plant = label.split('___')[0].replace(/_/g, ' ').replace(/\s*\(.*\)/, '');
-      const photo = LIBRARY_IMAGES[label];
       const card = document.createElement('button');
       card.className = 'library-card';
       card.dataset.plant = plant;
       card.innerHTML = `
-        ${photo
-          ? `<img class="card-img" src="${photo}" alt="${info.common_name} leaf" loading="lazy">`
-          : `<div class="card-img placeholder">${LEAF_PLACEHOLDER}</div>`}
+        <img class="card-img" src="${photo}" alt="${info.common_name} leaf" loading="lazy">
         <div class="card-body">
           <h3>${info.common_name}</h3>
           <p>${info.description}</p>

@@ -36,6 +36,7 @@
       </a>
       <nav class="tabs" role="tablist" aria-label="Main sections">
         <button class="tab active" role="tab" data-view="detect" aria-selected="true" data-i18n="nav.detect">Disease Identifier</button>
+        <button class="tab" role="tab" data-view="diagnose" aria-selected="false" data-i18n="nav.diagnose">Diagnose Plant</button>
         <button class="tab" role="tab" data-view="library" aria-selected="false" data-i18n="nav.library">Disease Library</button>
         <button class="tab" role="tab" data-view="about" aria-selected="false" data-i18n="nav.about">About</button>
       </nav>
@@ -108,7 +109,34 @@
   <main class="app-main">
     <!-- ============ DETECT VIEW ============ -->
     <section class="view active" id="view-detect">
-      <div class="causes-section">
+      <div class="stats-band" aria-label="LeafMedic at a glance">
+        <div class="stat">
+          <span class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Z"/><path d="M12 7v11" stroke-linecap="round"/></svg>
+          </span>
+          <div class="stat-text"><strong>16</strong><span>conditions recognized</span></div>
+        </div>
+        <div class="stat">
+          <span class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 21v-8" stroke-linecap="round"/><path d="M12 13c-4.6-.1-7.1-2.6-7.4-6.6 4.4.1 7 2.6 7.4 6.6Z"/><path d="M12 13c4.6-.1 7.1-2.6 7.4-6.6-4.4.1-7 2.6-7.4 6.6Z"/></svg>
+          </span>
+          <div class="stat-text"><strong>4</strong><span>crops covered</span></div>
+        </div>
+        <div class="stat">
+          <span class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.2c0 4.3-2.9 7.6-7 8.8-4.1-1.2-7-4.5-7-8.8V6l7-2.5Z"/><path d="m9.2 11.7 2 2 3.8-3.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <div class="stat-text"><strong>100%</strong><span>on-device — nothing uploaded</span></div>
+        </div>
+        <div class="stat">
+          <span class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 20.3S5 15.9 5 10.8C5 8.2 6.9 6.3 9.2 6.3c1.2 0 2.2.5 2.8 1.4.6-.9 1.6-1.4 2.8-1.4 2.3 0 4.2 1.9 4.2 4.5 0 5.1-7 9.5-7 9.5Z"/></svg>
+          </span>
+          <div class="stat-text"><strong>Free</strong><span>no account, no uploads</span></div>
+        </div>
+      </div>
+
+      <div class="causes-section home-section">
         <h2>Why Plants Get Sick</h2>
         <p class="causes-sub">Diseases and disorders start for many different reasons — from pathogens to growing conditions. These are the most common causes.</p>
         <div class="causes-grid">
@@ -155,6 +183,38 @@
         </div>
       </div>
 
+      <div class="home-section">
+        <h2>How LeafMedic Works</h2>
+        <p class="causes-sub">Three steps from a worrying leaf to a treatment plan — all in your browser, with nothing uploaded anywhere.</p>
+        <div class="steps-grid">
+          <div class="step-card">
+            <span class="step-num">1</span>
+            <h3>Photograph a leaf</h3>
+            <p>Take a close-up of a single leaf filling most of the frame, upload an existing photo, or try one of the built-in samples.</p>
+          </div>
+          <div class="step-card">
+            <span class="step-num">2</span>
+            <h3>AI analyzes on your device</h3>
+            <p>A neural network trained on thousands of leaf images runs right in your browser. It also checks photo quality — and says <em>Uncertain</em> rather than guessing.</p>
+          </div>
+          <div class="step-card">
+            <span class="step-num">3</span>
+            <h3>Get treatment &amp; prevention</h3>
+            <p>Every diagnosis comes with symptoms to confirm, treatment options, and prevention tips — plus a heatmap of what the AI looked at.</p>
+          </div>
+        </div>
+        <div class="home-cta-row">
+          <button class="btn-cta" data-goto="diagnose">
+            <svg viewBox="0 0 24 24"><path d="M4 7.5h3l1.5-2.5h7L17 7.5h3A1.5 1.5 0 0 1 21.5 9v9a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>
+            Diagnose a plant now
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============ DIAGNOSE VIEW ============ -->
+    <section class="view" id="view-diagnose">
       <div class="detect-grid" id="detect-tool">
         <div class="panel input-panel">
           <div class="input-tabs" role="tablist" aria-label="Image source">
@@ -231,7 +291,7 @@
             <div class="low-confidence-note" id="low-confidence-note" hidden></div>
             <div class="capture-note" id="capture-note" hidden></div>
 
-            <h3 class="section-title" data-i18n="results.confidence">Confidence</h3>
+            <h3 class="section-title" id="confidence-title" data-i18n="results.confidence">Confidence</h3>
             <div class="pred-bars" id="pred-bars"></div>
 
             <div class="explain-block" id="explain-block">
@@ -328,7 +388,7 @@
         <h4>Plant Care</h4>
         <a href="#" data-goto="detect">Disease Identifier</a>
         <a href="#" data-goto="library">Disease Library</a>
-        <a href="#" data-goto="detect" class="js-scroll-tool">Diagnose a Plant</a>
+        <a href="#" data-goto="diagnose">Diagnose a Plant</a>
         <a href="#" data-goto="about">Tips for Good Photos</a>
       </nav>
       <nav class="footer-col" aria-label="Project">

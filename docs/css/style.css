@@ -20,8 +20,6 @@
   --teal-2: #71c14e;
   --green-nav: #2e9d68;
   --green-deep: #1c6b47;
-  --mint-1: #d5f2dc;
-  --mint-2: #eef9d8;
   --blue-link: #1f8a5c;
   --blue-muted: #7d9187;
 
@@ -216,7 +214,7 @@ img { max-width: 100%; }
 .hero-art svg { width: 100%; max-width: 520px; height: auto; display: block; }
 
 /* ---------- Layout ---------- */
-.app-main { flex: 1; width: 100%; padding-top: 2rem; padding-bottom: 3.5rem; }
+.app-main { flex: 1; width: 100%; padding-top: 2rem; padding-bottom: 2rem; }
 .view { display: none; }
 .view.active { display: block; animation: fadein 0.25s ease; }
 @keyframes fadein { from { opacity: 0; transform: translateY(4px); } }
@@ -227,14 +225,66 @@ img { max-width: 100%; }
   border-radius: var(--radius);
 }
 
-/* ---------- Causes section ---------- */
-.causes-section { margin-bottom: 2.25rem; }
-.causes-section h2 {
+/* ---------- Home sections ---------- */
+.home-section { margin-bottom: 2.75rem; }
+.home-section:last-child { margin-bottom: 0; }
+
+/* Section divider: a hairline above every home section that follows
+ * another block, fading out toward the edges. */
+.stats-band + .home-section,
+.home-section + .home-section {
+  position: relative;
+  padding-top: 1.8rem;
+}
+/* The stats band sits close under the hero, so the first section needs less
+ * breathing room than the section-to-section gaps further down. */
+.stats-band + .home-section { padding-top: 1.6rem; }
+.stats-band + .home-section::before,
+.home-section + .home-section::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border) 18%, var(--border) 82%, transparent);
+}
+.home-section h2 {
   font-family: "Outfit", "Nunito", sans-serif;
   font-size: 1.7rem; font-weight: 700; color: var(--text);
   letter-spacing: -0.01em;
 }
-.causes-sub { color: var(--text-soft); font-size: 0.95rem; margin: 0.25rem 0 1.1rem; max-width: 72ch; }
+.causes-sub { color: var(--text-soft); font-size: 0.95rem; margin: 0.25rem 0 1.25rem; max-width: 78ch; }
+
+.stats-band {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.1rem;
+  margin-bottom: 2rem;
+}
+.stat {
+  display: flex; align-items: center; gap: 0.95rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.stat:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.stat-icon {
+  flex: none;
+  width: 3rem; height: 3rem; border-radius: 50%;
+  display: grid; place-items: center;
+  /* Matches the promo bar's warm yellow and ink. */
+  background: linear-gradient(90deg, #fbecc3, #f8e3ae);
+  color: #5c4715;
+}
+.stat-icon svg { width: 24px; height: 24px; }
+.stat-text { display: flex; flex-direction: column; }
+.stat-text strong {
+  font-family: "Outfit", "Nunito", sans-serif;
+  font-size: 1.55rem; font-weight: 700; color: #5c4715; line-height: 1.2;
+}
+.stat-text span { font-size: 0.85rem; color: #5c4715; line-height: 1.45; }
+
+/* ---------- Causes section ---------- */
 .causes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(224px, 1fr));
@@ -253,6 +303,30 @@ img { max-width: 100%; }
 .cause-body { padding: 0.85rem 1rem 1rem; }
 .cause-body h3 { font-size: 1rem; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 0.25rem; }
 .cause-body p { font-size: 0.875rem; color: var(--text-2); }
+
+/* ---------- How it works ---------- */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.4rem;
+}
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.4rem 1.5rem;
+}
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.2rem; height: 2.2rem; border-radius: 50%;
+  background: var(--green-100); color: var(--green-deep);
+  font-family: "Outfit", "Nunito", sans-serif;
+  font-size: 1.1rem; font-weight: 700;
+  margin-bottom: 0.8rem;
+}
+.step-card h3 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.35rem; }
+.step-card p { font-size: 0.925rem; color: var(--text-2); }
+.home-cta-row { margin-top: 1.5rem; text-align: center; }
 
 /* ---------- Detect ---------- */
 .detect-grid { display: grid; grid-template-columns: minmax(300px, 5fr) 7fr; gap: 1.5rem; align-items: start; }
@@ -332,8 +406,8 @@ body:not(.model-ready) .camera-controls { pointer-events: none; opacity: 0.6; }
 }
 .btn svg { width: 18px; height: 18px; }
 .btn:active { transform: scale(0.98); }
-.btn-primary { background: var(--cta-grad); color: #fff; }
-.btn-primary:hover { filter: brightness(1.05); }
+.btn-primary { background: var(--green-nav); color: #fff; }
+.btn-primary:hover { filter: brightness(0.94); }
 .btn-ghost { background: var(--surface-2); color: var(--text); }
 .btn-ghost:hover { background: var(--border); }
 .btn-link { color: var(--text-soft); font-size: 0.85rem; text-decoration: underline; }
@@ -491,7 +565,7 @@ body:not(.model-ready) .camera-controls { pointer-events: none; opacity: 0.6; }
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 .filter-chip:hover { border-color: var(--teal-1); color: var(--green-deep); }
-.filter-chip.active { background: var(--cta-grad); border-color: transparent; color: #fff; }
+.filter-chip.active { background: var(--green-nav); border-color: transparent; color: #fff; }
 
 .matches-label { color: var(--blue-muted); font-size: 0.875rem; }
 
@@ -515,10 +589,6 @@ body:not(.model-ready) .camera-controls { pointer-events: none; opacity: 0.6; }
   width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block;
   background: var(--surface-2);
 }
-.library-card .card-img.placeholder {
-  display: grid; place-items: center;
-  background: linear-gradient(160deg, var(--mint-1), var(--mint-2));
-}.library-card .card-img.placeholder svg { width: 46px; height: 46px; color: var(--green-deep); opacity: 0.55; }
 .library-card .card-body { padding: 0.85rem 1rem 1rem; }
 .library-card h3 { font-size: 1rem; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 0.25rem; }
 .library-card p {
