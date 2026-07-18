@@ -9,8 +9,15 @@ disease information, symptoms, and treatment recommendations.
 Educational Project - SunFounder Electronic Kit
 """
 
+from __future__ import annotations
+
 import json
+import logging
 import os
+from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
+
 
 class TreatmentDatabase:
     """
@@ -18,110 +25,95 @@ class TreatmentDatabase:
     Loads treatment data from JSON file and provides lookup methods.
     """
 
-    def __init__(self, data_file='data/treatments.json'):
+    def __init__(self, data_file: str = 'data/treatments.json') -> None:
         """
         Initialize the treatment database.
 
         Args:
-            data_file (str): Path to the treatments JSON file
+            data_file: Path to the treatments JSON file, relative to this file.
         """
         self.data_file = data_file
         self.data_dir = os.path.dirname(os.path.abspath(__file__))
         self.data_path = os.path.join(self.data_dir, data_file)
-        self.treatments = {}
+        self.treatments: dict[str, dict[str, Any]] = {}
         self.loaded = False
 
-    def load(self):
+    def load(self) -> bool:
         """
         Load treatment data from JSON file.
 
         Returns:
-            bool: True if successful, False otherwise
+            True if successful, False otherwise.
         """
         try:
             with open(self.data_path, 'r') as f:
                 self.treatments = json.load(f)
             self.loaded = True
-            print(f"✓ Loaded {len(self.treatments)} disease treatments from database")
+            logger.info("✓ Loaded %d disease treatments from database", len(self.treatments))
             return True
         except FileNotFoundError:
-            print(f"✗ Error: Treatment database not found at {self.data_path}")
-            self.loaded = False
-            return False
+            logger.error("✗ Treatment database not found at %s", self.data_path)
         except json.JSONDecodeError as e:
-            print(f"✗ Error: Invalid JSON in treatment database: {e}")
-            self.loaded = False
-            return False
-        except Exception as e:
-            print(f"✗ Error loading treatment database: {e}")
-            self.loaded = False
-            return False
+            logger.error("✗ Invalid JSON in treatment database: %s", e)
+        except Exception:
+            logger.exception("✗ Error loading treatment database")
+        self.loaded = False
+        return False
 
-    def get_treatment(self, class_label):
+    def get_treatment(self, class_label: str) -> Optional[dict[str, Any]]:
         """
         Get treatment information for a specific disease class.
 
         Args:
-            class_label (str): The disease class label (e.g., "Tomato___Early_blight")
+            class_label: The disease class label (e.g., "Tomato___Early_blight").
 
         Returns:
-            dict: Treatment information or None if not found
+            Treatment information dict, or None if not found.
         """
         if not self.loaded:
-            print("Warning: Database not loaded. Call load() first.")
+            logger.warning("Database not loaded. Call load() first.")
             return None
 
-        return self.treatments.get(class_label, None)
+        return self.treatments.get(class_label)
 
-    def get_common_name(self, class_label):
+    def get_common_name(self, class_label: str) -> str:
         """
         Get the common/display name for a disease.
 
         Args:
-            class_label (str): The disease class label
+            class_label: The disease class label.
 
         Returns:
-            str: Common name or the class label if not found
+            Common name, or the class label if not found.
         """
         treatment = self.get_treatment(class_label)
         if treatment:
             return treatment.get('common_name', class_label)
         return class_label
 
-    def get_all_diseases(self):
-        """
-        Get a list of all diseases in the database.
-
-        Returns:
-            list: List of disease class labels
-        """
+    def get_all_diseases(self) -> list[str]:
+        """Get a list of all disease class labels in the database."""
         return list(self.treatments.keys())
 
-    def get_disease_count(self):
-        """
-        Get the total number of diseases in the database.
-
-        Returns:
-            int: Number of diseases
-        """
+    def get_disease_count(self) -> int:
+        """Get the total number of diseases in the database."""
         return len(self.treatments)
 
-    def format_treatment_info(self, class_label):
+    def format_treatment_info(self, class_label: str) -> str:
         """
         Format treatment information as a human-readable string.
 
         Args:
-            class_label (str): The disease class label
+            class_label: The disease class label.
 
         Returns:
-            str: Formatted treatment information
+            Formatted treatment information.
         """
         treatment = self.get_treatment(class_label)
 
         if not treatment:
             return f"No information available for: {class_label}"
 
-        # Build formatted string
         output = []
         output.append("=" * 60)
         output.append(f"DIAGNOSIS: {treatment.get('common_name', 'Unknown')}")
@@ -131,27 +123,24 @@ class TreatmentDatabase:
         output.append(f"Disease: {treatment.get('disease', 'Unknown')}")
         output.append(f"Severity: {treatment.get('severity', 'Unknown').upper()}")
 
-        output.append(f"\nDescription:")
+        output.append("\nDescription:")
         output.append(f"  {treatment.get('description', 'No description available.')}")
 
-        # Symptoms
         symptoms = treatment.get('symptoms', [])
         if symptoms:
-            output.append(f"\nSymptoms:")
+            output.append("\nSymptoms:")
             for symptom in symptoms:
                 output.append(f"  • {symptom}")
 
-        # Treatments
         treatments = treatment.get('treatments', [])
         if treatments:
-            output.append(f"\nTreatment Recommendations:")
+            output.append("\nTreatment Recommendations:")
             for idx, treat in enumerate(treatments, 1):
                 output.append(f"  {idx}. {treat}")
 
-        # Prevention
         prevention = treatment.get('prevention', [])
         if prevention:
-            output.append(f"\nPrevention Measures:")
+            output.append("\nPrevention Measures:")
             for prev in prevention:
                 output.append(f"  • {prev}")
 
@@ -162,29 +151,21 @@ class TreatmentDatabase:
 
         return "\n".join(output)
 
-    def is_healthy(self, class_label):
-        """
-        Check if the classification indicates a healthy plant.
-
-        Args:
-            class_label (str): The disease class label
-
-        Returns:
-            bool: True if healthy, False otherwise
-        """
+    def is_healthy(self, class_label: str) -> bool:
+        """Check if the classification indicates a healthy plant."""
         return 'healthy' in class_label.lower()
 
 
 # Test the database module
-def test_database():
+def test_database() -> None:
     """
     Test function for the treatment database.
     """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     print("========================================")
     print("|    Treatment Database Test           |")
     print("========================================\n")
 
-    # Create and load database
     db = TreatmentDatabase()
 
     if not db.load():
@@ -193,7 +174,6 @@ def test_database():
 
     print(f"\nTotal diseases in database: {db.get_disease_count()}")
 
-    # Test with a few diseases
     test_cases = [
         "Tomato___Late_blight",
         "Apple___healthy",

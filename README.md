@@ -1,6 +1,6 @@
 # LeafMedic: Plant Disease Detection — On-Device AI 🪴
 
-![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20it%20now-brightgreen) ![Python](https://img.shields.io/badge/Python-3.7%2B-blue) ![TensorFlow Lite](https://img.shields.io/badge/TensorFlow-Lite-orange) ![ONNX Runtime Web](https://img.shields.io/badge/ONNX%20Runtime-Web-blueviolet) ![OpenCV](https://img.shields.io/badge/Computer%20Vision-OpenCV-green) ![PyQt5](https://img.shields.io/badge/GUI-PyQt5-brightgreen) ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-4B-red) ![Edge AI](https://img.shields.io/badge/Machine%20Learning-Edge%20AI-purple) ![License](https://img.shields.io/badge/License-Educational-yellowgreen)
+[![CI](https://github.com/mariarodr1136/LeafMedic/actions/workflows/ci.yml/badge.svg)](https://github.com/mariarodr1136/LeafMedic/actions/workflows/ci.yml) ![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20it%20now-brightgreen) ![Python](https://img.shields.io/badge/Python-3.7%2B-blue) ![TensorFlow Lite](https://img.shields.io/badge/TensorFlow-Lite-orange) ![ONNX Runtime Web](https://img.shields.io/badge/ONNX%20Runtime-Web-blueviolet) ![OpenCV](https://img.shields.io/badge/Computer%20Vision-OpenCV-green) ![PyQt5](https://img.shields.io/badge/GUI-PyQt5-brightgreen) ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-4B-red) ![Edge AI](https://img.shields.io/badge/Machine%20Learning-Edge%20AI-purple) ![License](https://img.shields.io/badge/License-Educational-yellowgreen)
 
 **LeafMedic** identifies plant diseases from a photo of a leaf and explains the symptoms, treatment, and prevention for what it finds. A MobileNet neural network classifies **16 conditions across 4 crops** entirely **on-device** — no server, no uploads, no photo ever leaves your machine.
 
@@ -49,8 +49,10 @@ The same network is served three ways: as a **browser app** (ONNX Runtime Web + 
 - 🕘 **Recent analyses** — a local history of past diagnoses, stored only in your browser
 - 🖥️ **Runs anywhere** — Raspberry Pi + camera module, any laptop with a webcam, or any modern browser
 - 🔒 **Private by design** — all inference is on-device; there is no server and no image ever uploads
-- ⚡ **Fast inference** — ~30 ms on a laptop, ~145 ms on Raspberry Pi 4, real-time in-browser via WebAssembly
-- 📱 **Installable PWA** — works offline after the first visit; add it to your phone's home screen
+- ⚡ **Fast inference** — ~30 ms on a laptop, ~145 ms on Raspberry Pi 4; the browser demo runs multi-threaded WebAssembly on repeat visits
+- 🛡️ **Reliability guard** — flags images that don't look like a supported leaf instead of returning a confident wrong answer
+- 📱 **Installable PWA** — works offline after the first visit (fonts and model included); add it to your phone's home screen
+- ✅ **Tested in CI** — golden prediction tests against real sample images plus a headless-browser smoke test on every push
 
 ---
 
@@ -127,6 +129,8 @@ The app auto-detects your camera: it prefers a Raspberry Pi camera module (Picam
 | `python3 ml_module.py` | Tests model loading and inference standalone |
 | `python3 disease_database.py` | Tests the treatment knowledge base |
 | `python3 -m http.server 3000 -d docs` | Serves the browser demo locally at `localhost:3000` |
+| `pytest tests/` | Runs data-integrity and golden prediction tests |
+| `node tests/web_smoke.mjs` | End-to-end browser demo smoke test (needs `playwright`) |
 
 ---
 
@@ -140,7 +144,9 @@ LeafMedic/
 ├── gui_module.py                # PyQt5 graphical interface
 ├── disease_database.py          # Disease information management
 ├── download_model.py            # Instructions/helper for obtaining the model
-├── requirements.txt             # Python dependencies
+├── requirements.txt             # Python dependencies (desktop)
+├── requirements-pi.txt          # Lighter dependencies for Raspberry Pi
+├── tests/                       # Pytest suite + browser smoke test (run in CI)
 ├── models/
 │   ├── plant_disease_model.tflite  # AgriPredict model (11 MB, 16 classes)
 │   └── labels.txt               # 16 class labels
@@ -250,10 +256,10 @@ The original LeafMedic hardware target — still fully supported.
 # Enable the camera
 sudo raspi-config   # Interface Options → Camera → Enable
 
-# Install dependencies
+# Install dependencies (lightweight LiteRT runtime instead of full TensorFlow)
 sudo apt update && sudo apt upgrade -y
 sudo apt install python3-picamera2
-pip3 install tensorflow opencv-python --break-system-packages
+pip3 install -r requirements-pi.txt --break-system-packages
 
 # Run
 python3 main.py
@@ -352,12 +358,12 @@ Ideas that would be especially welcome: PlantVillage-trained models with more cr
 
 ## 📄 License
 
-**Educational Use Only** — provided as-is for learning computer vision and machine learning concepts.
+**MIT** — see [LICENSE](LICENSE). Built as an educational project; not a professional diagnostic tool.
 
 - **Model**: Kaggle AgriPredict Disease Classification (16 classes)
 - **Dataset (future expansion)**: PlantVillage — CC0 Public Domain
 - **Treatment data**: compiled from public agricultural resources
-- **Dependencies**: TensorFlow (Apache 2.0) · ONNX Runtime (MIT) · PyQt5 (GPL v3) · OpenCV (Apache 2.0)
+- **Dependencies**: TensorFlow (Apache 2.0) · ONNX Runtime (MIT) · PyQt5 (GPL v3) · OpenCV (Apache 2.0) · Nunito & Outfit fonts (OFL 1.1)
 
 ---
 

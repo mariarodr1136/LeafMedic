@@ -217,9 +217,9 @@
     resultsPanel.classList.add('analyzing');
     try {
       const thumb = makeThumbnail(source, 320);
-      const preds = await LeafModel.classify(source, 3);
-      renderResults(preds, thumb);
-      pushHistory(preds[0], makeThumbnail(source, 96));
+      const { preds, leafScore, entropy } = await LeafModel.classify(source, 3);
+      renderResults(preds, thumb, { leafScore, entropy });
+      pushHistory(preds, makeThumbnail(source, 96));
     } catch (err) {
       console.error(err);
       alert(`Analysis failed: ${err.message}`);
@@ -239,15 +239,24 @@
     return canvas.toDataURL('image/jpeg', 0.85);
   }
 
-  function renderResults(preds, thumbUrl) {
+  function renderResults(preds, thumbUrl, meta) {
     const top = preds[0];
     const info = LeafModel.getTreatment(top.label);
     const healthy = /healthy/i.test(top.label);
-    const lowConfidence = top.confidence < CONFIDENCE_FLOOR;
+    // Out-of-distribution guard: top confidence too low, prediction spread
+    // too flat, or the image barely contains vegetation-colored pixels.
+    const notLeaf = meta && meta.leafScore < 0.12;
+    const lowConfidence = top.confidence < CONFIDENCE_FLOOR ||
+      notLeaf || (meta && meta.entropy > 0.75);
 
     $('results-empty').hidden = true;
     $('results-content').hidden = false;
     $('analyzed-img').src = thumbUrl;
+
+    const note = $('low-confidence-note');
+    note.innerHTML = notLeaf
+      ? 'This image doesn’t look like a close-up photo of a leaf, so the diagnosis below is unreliable. Photograph a single leaf filling most of the frame — the model only knows <strong>tomato, corn, soybean, and cabbage</strong> leaves.'
+      : 'The model isn’t confident about this image. Make sure the photo shows a single leaf, well lit and in focus — and note the model only knows <strong>tomato, corn, soybean, and cabbage</strong> leaves.';
 
     const badge = $('diagnosis-badge');
     if (lowConfidence) {
@@ -315,9 +324,14 @@
   function getHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
   }
-  function pushHistory(top, thumbUrl) {
+  function pushHistory(preds, thumbUrl) {
+    const top = preds[0];
     const entries = getHistory();
-    entries.unshift({ name: top.name, label: top.label, confidence: top.confidence, thumb: thumbUrl, ts: Date.now() });
+    entries.unshift({
+      name: top.name, label: top.label, confidence: top.confidence,
+      preds: preds.map(({ name, label, confidence }) => ({ name, label, confidence })),
+      thumb: thumbUrl, ts: Date.now(),
+    });
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, HISTORY_MAX)));
     } catch { /* storage full — drop silently */ }
@@ -328,15 +342,23 @@
     $('history-block').hidden = entries.length === 0;
     const grid = $('history-grid');
     grid.innerHTML = '';
-    entries.forEach(({ name, confidence, thumb, ts }) => {
-      const item = document.createElement('div');
+    entries.forEach((entry) => {
+      const { name, confidence, thumb, ts } = entry;
+      const item = document.createElement('button');
       item.className = 'history-item';
+      item.title = 'Show this result again';
       item.innerHTML = `
         <img src="${thumb}" alt="">
         <div class="history-meta">
           <strong>${name}</strong>
           <span>${(confidence * 100).toFixed(0)}% · ${new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
         </div>`;
+      item.addEventListener('click', () => {
+        // Older entries stored only the top prediction — rebuild a preds list.
+        const preds = entry.preds || [{ name: entry.name, label: entry.label, confidence: entry.confidence }];
+        renderResults(preds, thumb);
+        resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
       grid.appendChild(item);
     });
   }
@@ -394,6 +416,7 @@
 
   /* ---------- Disease modal ---------- */
   const modal = $('disease-modal');
+  let modalReturnFocus = null;
   function openDiseaseModal(label) {
     const info = LeafModel.getTreatment(label);
     if (!info) return;
@@ -402,21 +425,40 @@
     $('modal-body').innerHTML = `
       ${photo ? `<img class="modal-img" src="${photo}" alt="${info.common_name} leaf">` : ''}
       <span class="diagnosis-badge ${healthy ? 'healthy' : `severity-${info.severity || 'medium'}`}">${healthy ? 'Healthy' : (info.severity || 'medium') + ' severity'}</span>
-      <h2>${info.common_name}</h2>
+      <h2 id="modal-title">${info.common_name}</h2>
       ${healthy ? `<p>${info.description}</p>` : treatmentHTML(info)}`;
+    modalReturnFocus = document.activeElement;
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
+    $('modal-close').focus();
   }
   function closeDiseaseModal() {
     modal.hidden = true;
     document.body.style.overflow = '';
+    if (modalReturnFocus && modalReturnFocus.isConnected) modalReturnFocus.focus();
+    modalReturnFocus = null;
   }
   $('modal-close').addEventListener('click', closeDiseaseModal);
   modal.addEventListener('click', (e) => { if (e.target === modal) closeDiseaseModal(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeDiseaseModal(); });
+  document.addEventListener('keydown', (e) => {
+    if (modal.hidden) return;
+    if (e.key === 'Escape') { closeDiseaseModal(); return; }
+    // Trap Tab focus inside the dialog while it is open.
+    if (e.key === 'Tab') {
+      const focusables = modal.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])');
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
 
   /* ---------- Service worker ---------- */
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  // Registered on https and localhost. Besides offline caching, the worker
+  // injects COOP/COEP headers so repeat visits run multi-threaded WASM.
+  if ('serviceWorker' in navigator &&
+      (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
     navigator.serviceWorker.register('sw.js').catch(() => { /* non-fatal */ });
   }
 

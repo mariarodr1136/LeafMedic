@@ -9,10 +9,19 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LeafMedic — Plant Disease Identification Tool">
+  <meta property="og:description" content="Identify plant diseases from a photo of a leaf, right in your browser. The AI runs on your device — no install, no uploads.">
+  <meta property="og:url" content="https://mariarodr1136.github.io/LeafMedic/">
+  <meta property="og:image" content="https://github.com/user-attachments/assets/b88a5e3d-b727-433a-b9e1-e93642789667">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LeafMedic — Plant Disease Identification Tool">
+  <meta name="twitter:description" content="Identify plant diseases from a photo of a leaf, right in your browser. The AI runs on your device — no install, no uploads.">
+  <meta name="twitter:image" content="https://github.com/user-attachments/assets/b88a5e3d-b727-433a-b9e1-e93642789667">
 </head>
 <body>
   <!-- Announcement bar -->
@@ -200,7 +209,7 @@
           </div>
         </div>
 
-        <div class="panel results-panel" id="results-panel">
+        <div class="panel results-panel" id="results-panel" aria-live="polite">
           <div class="results-empty" id="results-empty">
             <svg viewBox="0 0 24 24"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Z"/><path d="M12 7v11" stroke-linecap="round"/></svg>
             <h2>Pick an image to begin</h2>
@@ -217,9 +226,7 @@
               </div>
             </div>
 
-            <div class="low-confidence-note" id="low-confidence-note" hidden>
-              The model isn't confident about this image. Make sure the photo shows a single leaf, well lit and in focus — and note the model only knows <strong>tomato, corn, soybean, and cabbage</strong> leaves.
-            </div>
+            <div class="low-confidence-note" id="low-confidence-note" hidden></div>
 
             <h3 class="section-title">Confidence</h3>
             <div class="pred-bars" id="pred-bars"></div>

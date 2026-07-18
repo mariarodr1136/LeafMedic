@@ -11,8 +11,12 @@ with a webcam. Prefer no install at all? Use the browser demo:
 https://mariarodr1136.github.io/LeafMedic/
 """
 
+import logging
 import sys
 from PyQt5.QtWidgets import QApplication
+
+# Module loggers (ml_module, disease_database) report status at INFO level.
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 # Import custom modules
 from camera_module import CameraController

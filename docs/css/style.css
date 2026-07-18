@@ -1,5 +1,20 @@
 /* LeafMedic — design system (MyPlantin-inspired) */
 
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../fonts/nunito-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
+  src: url("../fonts/outfit-latin.woff2") format("woff2");
+}
+
 :root {
   --teal-1: #27995d;
   --teal-2: #71c14e;
@@ -387,7 +402,10 @@ body:not(.model-ready) .camera-controls { pointer-events: none; opacity: 0.6; }
   display: flex; gap: 0.7rem; align-items: center;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 0.55rem;
+  text-align: left; cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
 }
+.history-item:hover { border-color: var(--teal-1); transform: translateY(-1px); }
 .history-item img { width: 46px; height: 46px; object-fit: cover; border-radius: 7px; }
 .history-meta { display: flex; flex-direction: column; min-width: 0; }
 .history-meta strong { font-size: 0.85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
