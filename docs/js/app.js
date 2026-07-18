@@ -19,11 +19,25 @@
   const HISTORY_MAX = 12;
   const CONFIDENCE_FLOOR = 0.3;
 
-  // Library card photos for conditions we have sample images of.
+  // Library card photos. Sources and licenses: docs/img/CREDITS.md
+  // (Corn lethal necrosis has no openly-licensed photo yet — it falls back
+  // to the leaf placeholder automatically.)
   const LIBRARY_IMAGES = {
-    'Corn_(maize)___Common_rust_': 'samples/corn_rust_1.jpg',
-    'Tomato___Bacterial_spot': 'samples/tomato_bacterial_spot_1.jpg',
-    'Tomato___Leaf_Mold': 'samples/tomato_leaf_mold_1.jpg',
+    'Tomato___healthy': 'img/library/tomato-healthy.jpg',
+    'Tomato___Septoria_leaf_spot': 'img/library/tomato-septoria-leaf-spot.jpg',
+    'Tomato___Bacterial_spot': 'img/library/tomato-bacterial-spot.jpg',
+    'Tomato___Late_blight': 'img/library/tomato-late-blight.jpg',
+    'Tomato___Spider_mites': 'img/library/tomato-spider-mites.jpg',
+    'Tomato___Leaf_Mold': 'img/library/tomato-leaf-mold.jpg',
+    'Tomato___Tomato_Yellow_Leaf_Curl_Virus': 'img/library/tomato-yellow-leaf-curl-virus.jpg',
+    'Corn_(maize)___Common_rust_': 'img/library/corn-common-rust.jpg',
+    'Corn_(maize)___healthy': 'img/library/corn-healthy.jpg',
+    'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot': 'img/library/corn-gray-leaf-spot.jpg',
+    'Soybean___healthy': 'img/library/soybean-healthy.jpg',
+    'Soybean___Downy_Mildew': 'img/library/soybean-downy-mildew.jpg',
+    'Soybean___Frogeye_Leaf_Spot': 'img/library/soybean-frogeye-leaf-spot.jpg',
+    'Cabbage___healthy': 'img/library/cabbage-healthy.jpg',
+    'Cabbage___Black_Rot': 'img/library/cabbage-black-rot.jpg',
   };
 
   const HERO_TEXT = {
