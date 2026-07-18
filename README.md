@@ -1,6 +1,6 @@
 # LeafMedic: Plant Disease Detection — On-Device AI 🪴
 
-[![CI](https://github.com/mariarodr1136/LeafMedic/actions/workflows/ci.yml/badge.svg)](https://github.com/mariarodr1136/LeafMedic/actions/workflows/ci.yml) ![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20it%20now-brightgreen) ![Python](https://img.shields.io/badge/Python-3.7%2B-blue) ![TensorFlow Lite](https://img.shields.io/badge/TensorFlow-Lite-orange) ![ONNX Runtime Web](https://img.shields.io/badge/ONNX%20Runtime-Web-blueviolet) ![OpenCV](https://img.shields.io/badge/Computer%20Vision-OpenCV-green) ![PyQt5](https://img.shields.io/badge/GUI-PyQt5-brightgreen) ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-4B-red) ![Edge AI](https://img.shields.io/badge/Machine%20Learning-Edge%20AI-purple) ![License](https://img.shields.io/badge/License-Educational-yellowgreen)
+[![CI](https://github.com/mariarodr1136/LeafMedic/actions/workflows/ci.yml/badge.svg)](https://github.com/mariarodr1136/LeafMedic/actions/workflows/ci.yml) ![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20it%20now-brightgreen) ![Python](https://img.shields.io/badge/Python-3.7%2B-blue) ![TensorFlow Lite](https://img.shields.io/badge/TensorFlow-Lite-orange) ![ONNX Runtime Web](https://img.shields.io/badge/ONNX%20Runtime-Web-blueviolet) ![OpenCV](https://img.shields.io/badge/Computer%20Vision-OpenCV-green) ![PyQt5](https://img.shields.io/badge/GUI-PyQt5-brightgreen) ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-4B-red) ![Edge AI](https://img.shields.io/badge/Machine%20Learning-Edge%20AI-purple) ![License](https://img.shields.io/badge/License-MIT-yellowgreen)
 
 **LeafMedic** identifies plant diseases from a photo of a leaf and explains the symptoms, treatment, and prevention for what it finds. A MobileNet neural network classifies **16 conditions across 4 crops** entirely **on-device** — no server, no uploads, no photo ever leaves your machine.
 
@@ -147,6 +147,7 @@ LeafMedic/
 ├── requirements.txt             # Python dependencies (desktop)
 ├── requirements-pi.txt          # Lighter dependencies for Raspberry Pi
 ├── tests/                       # Pytest suite + browser smoke test (run in CI)
+├── .github/workflows/ci.yml    # CI: Python tests + browser smoke test
 ├── models/
 │   ├── plant_disease_model.tflite  # AgriPredict model (11 MB, 16 classes)
 │   └── labels.txt               # 16 class labels
@@ -158,7 +159,9 @@ LeafMedic/
     ├── js/inference.js          # ONNX Runtime Web model loading + prediction
     ├── js/app.js                # Camera, upload, results, history, disease library
     ├── model/leafmedic.onnx     # Same network, converted for the browser
-    ├── sw.js                    # Service worker (offline support)
+    ├── sw.js                    # Service worker (offline + COOP/COEP for threads)
+    ├── fonts/                   # Self-hosted Nunito & Outfit (offline-safe)
+    ├── img/                     # Hero illustration + disease-cause card images
     └── vendor/                  # ONNX Runtime Web (self-hosted, no CDN)
 ```
 
