@@ -6,9 +6,7 @@ Snap a photo of a leaf and get a diagnosis — symptoms, treatment, and preventi
 
 One network, three runtimes, single source of truth: a **browser app** (ONNX Runtime Web — WebGPU with WASM fallback), a **desktop app** (Python + PyQt5), and a **Raspberry Pi 4** with a camera module. Cross-runtime prediction parity is asserted in CI, and every performance claim below is reproducible with a command in this repo.
 
-## Live Demo
-
-### **[mariarodr1136.github.io/LeafMedic](https://mariarodr1136.github.io/LeafMedic/)**
+Live Demo: [mariarodr1136.github.io/LeafMedic](https://mariarodr1136.github.io/LeafMedic/)
 
 Works in any modern browser — installable as an offline-capable PWA after the one-time 11 MB model download.
 
