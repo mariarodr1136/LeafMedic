@@ -2,7 +2,7 @@
  * assets (model, WASM, samples) on first use, so repeat visits work offline. */
 'use strict';
 
-const CACHE = 'leafmedic-v1';
+const CACHE = 'leafmedic-v2';
 const SHELL = [
   '.',
   'index.html',
