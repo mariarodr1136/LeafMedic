@@ -9,10 +9,18 @@ and inference for plant disease classification.
 Educational Project - SunFounder Electronic Kit
 """
 
+from __future__ import annotations
+
+import logging
 import os
 import time
+from typing import Any
+
 import numpy as np
 import cv2
+
+logger = logging.getLogger(__name__)
+
 
 class DiseaseDetector:
     """
@@ -20,8 +28,8 @@ class DiseaseDetector:
     Loads a quantized model and performs plant disease classification.
     """
 
-    def __init__(self, model_file='models/plant_disease_model.tflite',
-                 labels_file='models/labels.txt'):
+    def __init__(self, model_file: str = 'models/plant_disease_model.tflite',
+                 labels_file: str = 'models/labels.txt') -> None:
         """
         Initialize the disease detector.
 
@@ -38,19 +46,19 @@ class DiseaseDetector:
         self.interpreter = None
         self.input_details = None
         self.output_details = None
-        self.labels = []
+        self.labels: list[str] = []
         self.model_loaded = False
 
         # Model configuration
         self.input_size = (300, 300)  # Kaggle model uses 300x300
         self.confidence_threshold = 0.30  # 30% threshold for well-trained model
 
-    def setup(self):
+    def setup(self) -> bool:
         """
         Load the TFLite model and labels.
 
         Returns:
-            bool: True if successful, False otherwise
+            True if successful, False otherwise.
         """
         try:
             # Try importing a TFLite-compatible interpreter, newest first
@@ -66,23 +74,23 @@ class DiseaseDetector:
                         import tflite_runtime.interpreter as tflite
                         self.Interpreter = tflite.Interpreter
                     except ImportError:
-                        print("✗ Error: No TFLite interpreter found!")
-                        print("  Install one of: ai-edge-litert, tensorflow, tflite-runtime")
+                        logger.error("✗ No TFLite interpreter found! "
+                                     "Install one of: ai-edge-litert, tensorflow, tflite-runtime")
                         return False
 
             # Load labels
             if not os.path.exists(self.labels_path):
-                print(f"✗ Error: Labels file not found at {self.labels_path}")
+                logger.error("✗ Labels file not found at %s", self.labels_path)
                 return False
 
             with open(self.labels_path, 'r') as f:
                 self.labels = [line.strip() for line in f.readlines()]
-            print(f"✓ Loaded {len(self.labels)} class labels")
+            logger.info("✓ Loaded %d class labels", len(self.labels))
 
             # Load TFLite model
             if not os.path.exists(self.model_path):
-                print(f"✗ Error: Model file not found at {self.model_path}")
-                print("  See download_model.py for instructions on obtaining a model.")
+                logger.error("✗ Model file not found at %s "
+                             "(see download_model.py for instructions)", self.model_path)
                 return False
 
             self.interpreter = self.Interpreter(model_path=self.model_path)
@@ -97,41 +105,39 @@ class DiseaseDetector:
             output_shape = self.output_details[0]['shape']
             model_size_mb = os.path.getsize(self.model_path) / (1024 * 1024)
 
-            print(f"✓ Loaded TFLite model ({model_size_mb:.2f} MB)")
-            print(f"  Input shape: {input_shape}")
-            print(f"  Output shape: {output_shape}")
-            print(f"  Expected classes: {len(self.labels)}")
+            logger.info("✓ Loaded TFLite model (%.2f MB)", model_size_mb)
+            logger.info("  Input shape: %s | Output shape: %s | Classes: %d",
+                        input_shape, output_shape, len(self.labels))
 
             # Verify output shape matches labels
             if output_shape[-1] != len(self.labels):
-                print(f"⚠ Warning: Model output ({output_shape[-1]}) doesn't match labels ({len(self.labels)})")
+                logger.warning("⚠ Model output (%d) doesn't match labels (%d)",
+                               output_shape[-1], len(self.labels))
 
             self.model_loaded = True
 
             # Warm up model with dummy prediction
-            print("Warming up model...")
+            logger.info("Warming up model...")
             dummy_image = np.zeros((*self.input_size, 3), dtype=np.uint8)
             self.predict(dummy_image)
-            print("✓ Model ready for inference")
+            logger.info("✓ Model ready for inference")
 
             return True
 
-        except Exception as e:
-            print(f"✗ Error loading model: {e}")
-            import traceback
-            traceback.print_exc()
+        except Exception:
+            logger.exception("✗ Error loading model")
             self.model_loaded = False
             return False
 
-    def preprocess_image(self, image):
+    def preprocess_image(self, image: np.ndarray) -> np.ndarray:
         """
         Preprocess image for model input.
 
         Args:
-            image (numpy.ndarray): Input image (BGR format from OpenCV)
+            image: Input image (BGR format from OpenCV).
 
         Returns:
-            numpy.ndarray: Preprocessed image ready for inference
+            Preprocessed image ready for inference.
         """
         # Convert BGR to RGB
         if len(image.shape) == 3 and image.shape[2] == 3:
@@ -168,18 +174,18 @@ class DiseaseDetector:
 
         return image
 
-    def predict(self, image):
+    def predict(self, image: np.ndarray) -> list[tuple[str, float]]:
         """
         Run inference on an image.
 
         Args:
-            image (numpy.ndarray): Input image (can be any size, will be preprocessed)
+            image: Input image (any size; will be preprocessed).
 
         Returns:
-            list: List of (class_label, confidence) tuples, sorted by confidence
+            List of (class_label, confidence) tuples, sorted by confidence.
         """
         if not self.model_loaded:
-            print("Error: Model not loaded. Call setup() first.")
+            logger.error("Model not loaded. Call setup() first.")
             return []
 
         try:
@@ -213,39 +219,37 @@ class DiseaseDetector:
             # Sort by confidence (highest first)
             results.sort(key=lambda x: x[1], reverse=True)
 
-            print(f"Inference time: {inference_time:.1f}ms")
+            logger.debug("Inference time: %.1fms", inference_time)
 
             return results
 
-        except Exception as e:
-            print(f"Error during prediction: {e}")
-            import traceback
-            traceback.print_exc()
+        except Exception:
+            logger.exception("Error during prediction")
             return []
 
-    def predict_top_n(self, image, n=3):
+    def predict_top_n(self, image: np.ndarray, n: int = 3) -> list[tuple[str, float]]:
         """
         Get top N predictions for an image.
 
         Args:
-            image (numpy.ndarray): Input image
-            n (int): Number of top predictions to return
+            image: Input image.
+            n: Number of top predictions to return.
 
         Returns:
-            list: Top N (class_label, confidence) tuples
+            Top N (class_label, confidence) tuples.
         """
         all_predictions = self.predict(image)
         return all_predictions[:n]
 
-    def format_predictions(self, predictions):
+    def format_predictions(self, predictions: list[tuple[str, float]]) -> str:
         """
         Format predictions as a human-readable string.
 
         Args:
-            predictions (list): List of (class_label, confidence) tuples
+            predictions: List of (class_label, confidence) tuples.
 
         Returns:
-            str: Formatted prediction string
+            Formatted prediction string.
         """
         if not predictions:
             return "No confident predictions (all below threshold)"
@@ -267,12 +271,12 @@ class DiseaseDetector:
 
         return "\n".join(output)
 
-    def get_model_info(self):
+    def get_model_info(self) -> dict[str, Any]:
         """
         Get information about the loaded model.
 
         Returns:
-            dict: Model information
+            Model information.
         """
         if not self.model_loaded:
             return {"loaded": False}
@@ -290,10 +294,11 @@ class DiseaseDetector:
 
 
 # Test the ML module
-def test_detector():
+def test_detector() -> None:
     """
     Test function for the disease detector.
     """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     print("========================================")
     print("|    Disease Detector Test             |")
     print("========================================\n")

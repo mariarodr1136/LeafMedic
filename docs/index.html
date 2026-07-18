@@ -4,29 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="LeafMedic — identify plant diseases from a photo of a leaf, right in your browser. No install, no server: the AI model runs on your device.">
-  <meta name="theme-color" content="#1a7a4f">
-  <title>LeafMedic — Plant Disease Detection</title>
+  <meta name="theme-color" content="#27995d">
+  <title>LeafMedic — Plant Disease Identification Tool</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="preload" href="fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LeafMedic — Plant Disease Identification Tool">
+  <meta property="og:description" content="Identify plant diseases from a photo of a leaf, right in your browser. The AI runs on your device — no install, no uploads.">
+  <meta property="og:url" content="https://mariarodr1136.github.io/LeafMedic/">
+  <meta property="og:image" content="https://github.com/user-attachments/assets/b88a5e3d-b727-433a-b9e1-e93642789667">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LeafMedic — Plant Disease Identification Tool">
+  <meta name="twitter:description" content="Identify plant diseases from a photo of a leaf, right in your browser. The AI runs on your device — no install, no uploads.">
+  <meta name="twitter:image" content="https://github.com/user-attachments/assets/b88a5e3d-b727-433a-b9e1-e93642789667">
 </head>
 <body>
-  <header class="app-header">
-    <div class="header-inner">
+  <!-- Announcement bar -->
+  <div class="promo-bar">Identify, Treat &amp; Grow Healthy Crops with LeafMedic!</div>
+
+  <!-- Navigation -->
+  <header class="site-nav">
+    <div class="nav-inner">
       <a class="brand" href="#" id="brand-link">
-        <svg class="brand-leaf" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Zm0 18.5A5.5 5.5 0 0 1 6.5 15c0-3.1 1.9-6.4 5.5-9.8 3.6 3.4 5.5 6.7 5.5 9.8A5.5 5.5 0 0 1 12 20.5Z"/><path d="M12 7v11" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <svg class="brand-leaf" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Z" fill="currentColor" stroke="none"/></svg>
         <span>Leaf<em>Medic</em></span>
       </a>
       <nav class="tabs" role="tablist" aria-label="Main sections">
-        <button class="tab active" role="tab" data-view="detect" aria-selected="true">Detect</button>
+        <button class="tab active" role="tab" data-view="detect" aria-selected="true">Disease Identifier</button>
         <button class="tab" role="tab" data-view="library" aria-selected="false">Disease Library</button>
         <button class="tab" role="tab" data-view="about" aria-selected="false">About</button>
       </nav>
-      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
-        <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8" stroke-linecap="round"/></svg>
-        <svg class="icon-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
-      </button>
+      <div class="nav-right">
+        <div class="search-pill" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5" stroke-linecap="round"/></svg>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -36,16 +53,107 @@
       <div class="spinner" aria-hidden="true"></div>
       <div class="model-banner-text">
         <strong id="model-status-title">Loading AI model…</strong>
-        <span id="model-status-detail">Downloading once (~24 MB) — cached for future visits</span>
+        <span id="model-status-detail">Downloading once (~12 MB) — cached for future visits</span>
       </div>
       <div class="progress-track" id="model-progress-track"><div class="progress-fill" id="model-progress"></div></div>
     </div>
   </div>
 
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="breadcrumb" aria-label="Breadcrumb">
+          <a href="#" id="crumb-home">LeafMedic</a>
+          <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="crumb-current">Disease Identifier</span>
+        </div>
+        <h1 id="hero-title">Plant Disease Identification Tool</h1>
+        <p id="hero-copy">Don't let your crops suffer from disorders and disease damage. Begin treatment with our free plant disease identifier — the AI runs right in your browser, and your photos never leave your device.</p>
+        <button class="btn-cta" id="hero-cta">
+          <svg viewBox="0 0 24 24"><path d="M4 7.5h3l1.5-2.5h7L17 7.5h3A1.5 1.5 0 0 1 21.5 9v9a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          Diagnose a plant
+        </button>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 520 310">
+          <defs>
+            <clipPath id="hero-bubble-right"><circle cx="398" cy="172" r="118"/></clipPath>
+          </defs>
+          <!-- medium droopy plant bubble -->
+          <g transform="translate(-20 -30) translate(210 128) scale(1.15) translate(-210 -128)">
+            <circle cx="210" cy="128" r="72" fill="#f8e3ae" stroke="none"/>
+            <g transform="translate(0 -8)">
+              <path d="M210 118v30" stroke="#2f8560" stroke-width="4" stroke-linecap="round"/>
+              <path d="M210 124c-14-2-22-12-22-26 12 1 21 11 22 26Z" fill="#3f9b6e"/>
+              <path d="M210 124c14-2 22-12 22-26-12 1-21 11-22 26Z" fill="#3f9b6e"/>
+              <path d="M210 132c-10 4-21 2-28-6 8-7 20-6 28 6Z" fill="#52b06e"/>
+              <path d="M210 132c10 4 21 2 28-6-8-7-20-6-28 6Z" fill="#52b06e"/>
+              <path d="M190 148h40l-5 26a7 7 0 0 1-7 6h-16a7 7 0 0 1-7-6l-5-26Z" fill="#d97f57"/>
+              <rect x="186" y="144" width="48" height="9" rx="4.5" fill="#e69a72"/>
+            </g>
+          </g>
+          <!-- large bubble: gardener admiring her plant -->
+          <g transform="translate(-8 -30) translate(398 172) scale(1.1) translate(-398 -172)">
+            <circle cx="398" cy="172" r="118" fill="#f8e3ae" stroke="none"/>
+            <image href="img/gardener.png" x="288" y="80" width="220" height="210" clip-path="url(#hero-bubble-right)" preserveAspectRatio="xMidYMax meet"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
   <main class="app-main">
     <!-- ============ DETECT VIEW ============ -->
     <section class="view active" id="view-detect">
-      <div class="detect-grid">
+      <div class="causes-section">
+        <h2>Why Plants Get Sick</h2>
+        <p class="causes-sub">Diseases and disorders start for many different reasons — from pathogens to growing conditions. These are the most common causes.</p>
+        <div class="causes-grid">
+          <div class="cause-card">
+            <img src="img/causes/fungal.jpg" alt="Fungal diseases">
+            <div class="cause-body"><h3>Fungal Diseases</h3><p>Rusts, molds, leaf spots and blights that thrive in warm, humid conditions and spread by airborne spores.</p></div>
+          </div>
+          <div class="cause-card">
+            <img src="img/causes/bacterial.jpg" alt="Bacterial diseases">
+            <div class="cause-body"><h3>Bacterial Diseases</h3><p>Spread through water splash, contaminated tools and wounds, causing spots, rots and wilts.</p></div>
+          </div>
+          <div class="cause-card">
+            <img src="img/causes/viral.jpg" alt="Viral diseases">
+            <div class="cause-body"><h3>Viral Diseases</h3><p>Carried by insects like whiteflies and aphids, viruses cause curling, mottling and stunted growth.</p></div>
+          </div>
+          <div class="cause-card">
+            <img src="img/causes/pests.jpg" alt="Pests and insects">
+            <div class="cause-body"><h3>Pests &amp; Insects</h3><p>Mites, caterpillars and sap-sucking insects damage leaves directly and spread disease as they feed.</p></div>
+          </div>
+          <div class="cause-card">
+            <img src="img/causes/nutrient-excess.jpg" alt="Nutrient excess">
+            <div class="cause-body"><h3>Nutrient Excess</h3><p>Over-fertilizing burns roots and leaf edges and can lock out other nutrients the plant needs.</p></div>
+          </div>
+          <div class="cause-card">
+            <img src="img/causes/nutrient-deficiency.jpg" alt="Nutrient deficiency">
+            <div class="cause-body"><h3>Nutrient Deficiency</h3><p>Missing nitrogen, iron or magnesium shows up as pale, yellowing leaves and weak growth.</p></div>
+          </div>
+          <div class="cause-card">
+            <img src="img/causes/overwatering.jpg" alt="Overwatering">
+            <div class="cause-body"><h3>Overwatering</h3><p>Soggy soil suffocates roots and invites root rot — one of the most common ways plants die.</p></div>
+          </div>
+          <div class="cause-card">
+            <img src="img/causes/water-deficiency.jpg" alt="Water deficiency">
+            <div class="cause-body"><h3>Water Deficiency</h3><p>Drought stress causes drooping, crispy leaf edges and premature leaf drop.</p></div>
+          </div>
+          <div class="cause-card">
+            <img src="img/causes/light-heat.jpg" alt="Light or heat damage">
+            <div class="cause-body"><h3>Light &amp; Heat Damage</h3><p>Too much direct sun or heat scorches leaves, bleaching or browning the exposed surfaces.</p></div>
+          </div>
+          <div class="cause-card">
+            <img src="img/causes/air-issues.jpg" alt="Air-related issues">
+            <div class="cause-body"><h3>Air-Related Issues</h3><p>Low humidity, cold drafts and poor airflow stress plants and encourage mold and mildew.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detect-grid" id="detect-tool">
         <div class="panel input-panel">
           <div class="input-tabs" role="tablist" aria-label="Image source">
             <button class="input-tab active" data-mode="samples" role="tab" aria-selected="true">
@@ -101,7 +209,7 @@
           </div>
         </div>
 
-        <div class="panel results-panel" id="results-panel">
+        <div class="panel results-panel" id="results-panel" aria-live="polite">
           <div class="results-empty" id="results-empty">
             <svg viewBox="0 0 24 24"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Z"/><path d="M12 7v11" stroke-linecap="round"/></svg>
             <h2>Pick an image to begin</h2>
@@ -118,9 +226,7 @@
               </div>
             </div>
 
-            <div class="low-confidence-note" id="low-confidence-note" hidden>
-              The model isn't confident about this image. Make sure the photo shows a single leaf, well lit and in focus — and note the model only knows <strong>tomato, corn, soybean, and cabbage</strong> leaves.
-            </div>
+            <div class="low-confidence-note" id="low-confidence-note" hidden></div>
 
             <h3 class="section-title">Confidence</h3>
             <div class="pred-bars" id="pred-bars"></div>
@@ -144,9 +250,8 @@
     <!-- ============ LIBRARY VIEW ============ -->
     <section class="view" id="view-library">
       <div class="library-intro">
-        <h1>Disease Library</h1>
-        <p>Every condition this model can recognize, with symptoms, treatment, and prevention guidance.</p>
         <div class="library-filters" id="library-filters"></div>
+        <p class="matches-label" id="matches-label">diseases matches “All”</p>
       </div>
       <div class="library-grid" id="library-grid"></div>
     </section>
@@ -154,7 +259,7 @@
     <!-- ============ ABOUT VIEW ============ -->
     <section class="view" id="view-about">
       <div class="about-card panel">
-        <h1>About LeafMedic</h1>
+        <h2>About LeafMedic</h2>
         <p>LeafMedic identifies plant diseases from a photo of a leaf using a MobileNetV2 neural network trained on the PlantVillage dataset. It recognizes <strong>16 conditions across 4 crops</strong>: tomato, corn (maize), soybean, and cabbage.</p>
         <h3>Runs entirely in your browser</h3>
         <p>The quantized model (11 MB) is downloaded once and executed on your device with ONNX Runtime Web (WebAssembly). No photo you analyze is ever uploaded anywhere — there is no server.</p>
@@ -169,13 +274,71 @@
         </ul>
         <h3>Links</h3>
         <p><a href="https://github.com/mariarodr1136/LeafMedic" target="_blank" rel="noopener">Source code on GitHub</a></p>
+        <p><a href="https://github.com/mariarodr1136/LeafMedic/blob/master/docs/img/CREDITS.md" target="_blank" rel="noopener">Photo credits &amp; licenses</a> — leaf photographs come from the PlantVillage dataset (CC0) and Wikimedia Commons contributors.</p>
         <p class="disclaimer">⚠️ Educational project. For professional diagnosis, consult your local agricultural extension service.</p>
       </div>
     </section>
   </main>
 
-  <footer class="app-footer">
-    <span>LeafMedic · on-device AI plant diagnosis · <a href="https://github.com/mariarodr1136/LeafMedic" target="_blank" rel="noopener">GitHub</a></span>
+  <!-- Disease detail modal -->
+  <div class="modal-backdrop" id="disease-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal-close" id="modal-close" aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke-linecap="round"/></svg>
+      </button>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="#" id="footer-brand-link">
+          <svg class="brand-leaf" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Z" fill="currentColor" stroke="none"/></svg>
+          <span>Leaf<em>Medic</em></span>
+        </a>
+        <p>Our plant disease identifier recognizes 16 conditions across 4 crops, pairs every diagnosis with treatment and prevention guidance, and runs entirely on your device — no account, no uploads, and much more!</p>
+      </div>
+      <nav class="footer-col" aria-label="Plant care">
+        <h4>Plant Care</h4>
+        <a href="#" data-goto="detect">Disease Identifier</a>
+        <a href="#" data-goto="library">Disease Library</a>
+        <a href="#" data-goto="detect" class="js-scroll-tool">Diagnose a Plant</a>
+        <a href="#" data-goto="about">Tips for Good Photos</a>
+      </nav>
+      <nav class="footer-col" aria-label="Project">
+        <h4>Project</h4>
+        <a href="https://github.com/mariarodr1136/LeafMedic" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://github.com/mariarodr1136/LeafMedic#readme" target="_blank" rel="noopener">Documentation</a>
+        <a href="#" data-goto="about">About LeafMedic</a>
+        <a href="https://onnxruntime.ai/" target="_blank" rel="noopener">ONNX Runtime Web</a>
+      </nav>
+      <nav class="footer-col" aria-label="Good to know">
+        <h4>Good to Know</h4>
+        <a href="#" data-goto="about">Educational Use Only</a>
+        <a href="#" data-goto="about">Privacy: On-Device AI</a>
+        <a href="#" data-goto="library">Supported Crops</a>
+        <a href="https://github.com/mariarodr1136/LeafMedic/blob/master/docs/img/CREDITS.md" target="_blank" rel="noopener">Photo Credits</a>
+      </nav>
+      <div class="footer-col footer-apps">
+        <h4>Get the Project</h4>
+        <a class="store-badge" href="https://github.com/mariarodr1136/LeafMedic" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M12 1.9a10.2 10.2 0 0 0-3.2 19.9c.5.1.7-.2.7-.5v-1.8c-2.9.6-3.5-1.2-3.5-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.6 1 1.6 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.7-1.4-2.3-.3-4.7-1.1-4.7-5.1 0-1.1.4-2 1-2.7-.1-.3-.5-1.3.1-2.7 0 0 .9-.3 2.8 1a9.8 9.8 0 0 1 5.2 0c1.9-1.3 2.8-1 2.8-1 .6 1.4.2 2.4.1 2.7.7.7 1 1.6 1 2.7 0 4-2.4 4.8-4.7 5.1.4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.2 10.2 0 0 0 12 1.9Z"/></svg>
+          <span><small>View source on</small>GitHub</span>
+        </a>
+        <a class="store-badge" href="https://github.com/mariarodr1136/LeafMedic#readme" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M5 2.5h9.5a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H7a2 2 0 0 0-2 2V4.5a2 2 0 0 1 0-2Zm14.5 3V19a3.5 3.5 0 0 1-3.5 3.5H6.3A3.5 3.5 0 0 0 9 21h8a2.5 2.5 0 0 0 2.5-2.5v-13Z"/><circle cx="10.2" cy="8" r="1.6" fill="currentColor" stroke="none"/></svg>
+          <span><small>Runs on</small>Raspberry Pi</span>
+        </a>
+        <div class="footer-social">
+          <a href="https://github.com/mariarodr1136" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 1.9a10.2 10.2 0 0 0-3.2 19.9c.5.1.7-.2.7-.5v-1.8c-2.9.6-3.5-1.2-3.5-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.6 1 1.6 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.7-1.4-2.3-.3-4.7-1.1-4.7-5.1 0-1.1.4-2 1-2.7-.1-.3-.5-1.3.1-2.7 0 0 .9-.3 2.8 1a9.8 9.8 0 0 1 5.2 0c1.9-1.3 2.8-1 2.8-1 .6 1.4.2 2.4.1 2.7.7.7 1 1.6 1 2.7 0 4-2.4 4.8-4.7 5.1.4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.2 10.2 0 0 0 12 1.9Z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+    <p class="footer-copy">©2026 LeafMedic · Educational project · All rights reserved</p>
   </footer>
 
   <canvas id="work-canvas" hidden></canvas>

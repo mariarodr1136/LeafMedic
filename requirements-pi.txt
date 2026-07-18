@@ -1,0 +1,13 @@
+# LeafMedic dependencies for Raspberry Pi — uses the lightweight LiteRT
+# runtime instead of full TensorFlow (hundreds of MB smaller).
+#
+# The camera additionally needs Picamera2, installed via apt (not pip):
+#   sudo apt install python3-picamera2
+#
+# On older Raspberry Pi OS images where ai-edge-litert is unavailable,
+# substitute:  tflite-runtime
+
+numpy
+opencv-python
+PyQt5
+ai-edge-litert

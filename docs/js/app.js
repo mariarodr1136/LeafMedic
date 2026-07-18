@@ -19,25 +19,62 @@
   const HISTORY_MAX = 12;
   const CONFIDENCE_FLOOR = 0.3;
 
-  /* ---------- Theme ---------- */
-  const themeToggle = $('theme-toggle');
-  function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('leafmedic-theme', theme);
-  }
-  const savedTheme = localStorage.getItem('leafmedic-theme');
-  if (savedTheme) document.documentElement.dataset.theme = savedTheme;
-  themeToggle.addEventListener('click', () => {
-    const current = document.documentElement.dataset.theme ||
-      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    applyTheme(current === 'dark' ? 'light' : 'dark');
-  });
+  // Library card photos. Sources and licenses: docs/img/CREDITS.md
+  // (Corn lethal necrosis has no openly-licensed photo yet — it falls back
+  // to the leaf placeholder automatically.)
+  const LIBRARY_IMAGES = {
+    'Tomato___healthy': 'img/library/tomato-healthy.jpg',
+    'Tomato___Septoria_leaf_spot': 'img/library/tomato-septoria-leaf-spot.jpg',
+    'Tomato___Bacterial_spot': 'img/library/tomato-bacterial-spot.jpg',
+    'Tomato___Late_blight': 'img/library/tomato-late-blight.jpg',
+    'Tomato___Spider_mites': 'img/library/tomato-spider-mites.jpg',
+    'Tomato___Leaf_Mold': 'img/library/tomato-leaf-mold.jpg',
+    'Tomato___Tomato_Yellow_Leaf_Curl_Virus': 'img/library/tomato-yellow-leaf-curl-virus.jpg',
+    'Corn_(maize)___Common_rust_': 'img/library/corn-common-rust.jpg',
+    'Corn_(maize)___healthy': 'img/library/corn-healthy.jpg',
+    'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot': 'img/library/corn-gray-leaf-spot.jpg',
+    'Soybean___healthy': 'img/library/soybean-healthy.jpg',
+    'Soybean___Downy_Mildew': 'img/library/soybean-downy-mildew.jpg',
+    'Soybean___Frogeye_Leaf_Spot': 'img/library/soybean-frogeye-leaf-spot.jpg',
+    'Cabbage___healthy': 'img/library/cabbage-healthy.jpg',
+    'Cabbage___Black_Rot': 'img/library/cabbage-black-rot.jpg',
+  };
+
+  const HERO_TEXT = {
+    detect: {
+      crumb: 'Disease Identifier',
+      title: 'Plant Disease Identification Tool',
+      copy: "Don't let your crops suffer from disorders and disease damage. Begin treatment with our free plant disease identifier — the AI runs right in your browser, and your photos never leave your device.",
+    },
+    library: {
+      crumb: 'Disease Library',
+      title: 'Plant Disease Library',
+      copy: 'Every condition the LeafMedic model can recognize, with symptoms, treatment, and prevention guidance for each one.',
+    },
+    about: {
+      crumb: 'About',
+      title: 'About LeafMedic',
+      copy: 'An on-device AI plant disease identifier that began life on a Raspberry Pi — now running entirely in your browser.',
+    },
+  };
 
   /* ---------- View tabs ---------- */
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => showView(tab.dataset.view));
   });
   $('brand-link').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); });
+  $('crumb-home').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); });
+  $('footer-brand-link').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  document.querySelectorAll('.footer-col a[data-goto]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      showView(a.dataset.goto);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (a.classList.contains('js-scroll-tool')) {
+        setTimeout(() => $('detect-tool').scrollIntoView({ behavior: 'smooth' }), 50);
+      }
+    });
+  });
   function showView(name) {
     document.querySelectorAll('.tab').forEach((t) => {
       const active = t.dataset.view === name;
@@ -45,8 +82,19 @@
       t.setAttribute('aria-selected', String(active));
     });
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
+    const hero = HERO_TEXT[name] || HERO_TEXT.detect;
+    $('crumb-current').textContent = hero.crumb;
+    $('hero-title').textContent = hero.title;
+    $('hero-copy').textContent = hero.copy;
+    $('hero-cta').hidden = name === 'about';
     if (name !== 'detect') stopCamera();
   }
+
+  /* ---------- Hero CTA ---------- */
+  $('hero-cta').addEventListener('click', () => {
+    showView('detect');
+    $('detect-tool').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   /* ---------- Model loading ---------- */
   const banner = $('model-banner');
@@ -183,9 +231,9 @@
     resultsPanel.classList.add('analyzing');
     try {
       const thumb = makeThumbnail(source, 320);
-      const preds = await LeafModel.classify(source, 3);
-      renderResults(preds, thumb);
-      pushHistory(preds[0], makeThumbnail(source, 96));
+      const { preds, leafScore, entropy } = await LeafModel.classify(source, 3);
+      renderResults(preds, thumb, { leafScore, entropy });
+      pushHistory(preds, makeThumbnail(source, 96));
     } catch (err) {
       console.error(err);
       alert(`Analysis failed: ${err.message}`);
@@ -205,15 +253,24 @@
     return canvas.toDataURL('image/jpeg', 0.85);
   }
 
-  function renderResults(preds, thumbUrl) {
+  function renderResults(preds, thumbUrl, meta) {
     const top = preds[0];
     const info = LeafModel.getTreatment(top.label);
     const healthy = /healthy/i.test(top.label);
-    const lowConfidence = top.confidence < CONFIDENCE_FLOOR;
+    // Out-of-distribution guard: top confidence too low, prediction spread
+    // too flat, or the image barely contains vegetation-colored pixels.
+    const notLeaf = meta && meta.leafScore < 0.12;
+    const lowConfidence = top.confidence < CONFIDENCE_FLOOR ||
+      notLeaf || (meta && meta.entropy > 0.75);
 
     $('results-empty').hidden = true;
     $('results-content').hidden = false;
     $('analyzed-img').src = thumbUrl;
+
+    const note = $('low-confidence-note');
+    note.innerHTML = notLeaf
+      ? 'This image doesn’t look like a close-up photo of a leaf, so the diagnosis below is unreliable. Photograph a single leaf filling most of the frame — the model only knows <strong>tomato, corn, soybean, and cabbage</strong> leaves.'
+      : 'The model isn’t confident about this image. Make sure the photo shows a single leaf, well lit and in focus — and note the model only knows <strong>tomato, corn, soybean, and cabbage</strong> leaves.';
 
     const badge = $('diagnosis-badge');
     if (lowConfidence) {
@@ -281,9 +338,14 @@
   function getHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
   }
-  function pushHistory(top, thumbUrl) {
+  function pushHistory(preds, thumbUrl) {
+    const top = preds[0];
     const entries = getHistory();
-    entries.unshift({ name: top.name, label: top.label, confidence: top.confidence, thumb: thumbUrl, ts: Date.now() });
+    entries.unshift({
+      name: top.name, label: top.label, confidence: top.confidence,
+      preds: preds.map(({ name, label, confidence }) => ({ name, label, confidence })),
+      thumb: thumbUrl, ts: Date.now(),
+    });
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, HISTORY_MAX)));
     } catch { /* storage full — drop silently */ }
@@ -294,15 +356,23 @@
     $('history-block').hidden = entries.length === 0;
     const grid = $('history-grid');
     grid.innerHTML = '';
-    entries.forEach(({ name, confidence, thumb, ts }) => {
-      const item = document.createElement('div');
+    entries.forEach((entry) => {
+      const { name, confidence, thumb, ts } = entry;
+      const item = document.createElement('button');
       item.className = 'history-item';
+      item.title = 'Show this result again';
       item.innerHTML = `
         <img src="${thumb}" alt="">
         <div class="history-meta">
           <strong>${name}</strong>
           <span>${(confidence * 100).toFixed(0)}% · ${new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
         </div>`;
+      item.addEventListener('click', () => {
+        // Older entries stored only the top prediction — rebuild a preds list.
+        const preds = entry.preds || [{ name: entry.name, label: entry.label, confidence: entry.confidence }];
+        renderResults(preds, thumb);
+        resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
       grid.appendChild(item);
     });
   }
@@ -312,6 +382,9 @@
   });
 
   /* ---------- Disease library ---------- */
+  const LEAF_PLACEHOLDER = `
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Z"/><path d="M12 7v11" stroke-linecap="round"/></svg>`;
+
   function renderLibrary() {
     const labels = LeafModel.getLabels();
     const plants = [...new Set(labels.map((l) => l.split('___')[0].replace(/_/g, ' ').replace(/\s*\(.*\)/, '')))].sort();
@@ -327,6 +400,7 @@
         document.querySelectorAll('.library-card').forEach((card) => {
           card.hidden = plant !== 'All' && card.dataset.plant !== plant;
         });
+        $('matches-label').textContent = `diseases matches “${plant}”`;
       });
       filters.appendChild(btn);
     });
@@ -336,27 +410,69 @@
     [...labels].sort().forEach((label) => {
       const info = LeafModel.getTreatment(label);
       if (!info) return;
-      const healthy = /healthy/i.test(label);
       const plant = label.split('___')[0].replace(/_/g, ' ').replace(/\s*\(.*\)/, '');
-      const card = document.createElement('details');
-      card.className = 'library-card panel';
+      const photo = LIBRARY_IMAGES[label];
+      const card = document.createElement('button');
+      card.className = 'library-card';
       card.dataset.plant = plant;
       card.innerHTML = `
-        <summary>
-          <div>
-            <span class="diagnosis-badge ${healthy ? 'healthy' : `severity-${info.severity || 'medium'}`}">${healthy ? 'Healthy' : info.severity + ' severity'}</span>
-            <h3>${info.common_name}</h3>
-            <p>${info.description}</p>
-          </div>
-          <svg class="chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </summary>
-        <div class="library-card-body">${healthy ? `<p>${info.description}</p>` : treatmentHTML(info)}</div>`;
+        ${photo
+          ? `<img class="card-img" src="${photo}" alt="${info.common_name} leaf" loading="lazy">`
+          : `<div class="card-img placeholder">${LEAF_PLACEHOLDER}</div>`}
+        <div class="card-body">
+          <h3>${info.common_name}</h3>
+          <p>${info.description}</p>
+        </div>`;
+      card.addEventListener('click', () => openDiseaseModal(label));
       grid.appendChild(card);
     });
   }
 
+  /* ---------- Disease modal ---------- */
+  const modal = $('disease-modal');
+  let modalReturnFocus = null;
+  function openDiseaseModal(label) {
+    const info = LeafModel.getTreatment(label);
+    if (!info) return;
+    const healthy = /healthy/i.test(label);
+    const photo = LIBRARY_IMAGES[label];
+    $('modal-body').innerHTML = `
+      ${photo ? `<img class="modal-img" src="${photo}" alt="${info.common_name} leaf">` : ''}
+      <span class="diagnosis-badge ${healthy ? 'healthy' : `severity-${info.severity || 'medium'}`}">${healthy ? 'Healthy' : (info.severity || 'medium') + ' severity'}</span>
+      <h2 id="modal-title">${info.common_name}</h2>
+      ${healthy ? `<p>${info.description}</p>` : treatmentHTML(info)}`;
+    modalReturnFocus = document.activeElement;
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    $('modal-close').focus();
+  }
+  function closeDiseaseModal() {
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    if (modalReturnFocus && modalReturnFocus.isConnected) modalReturnFocus.focus();
+    modalReturnFocus = null;
+  }
+  $('modal-close').addEventListener('click', closeDiseaseModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeDiseaseModal(); });
+  document.addEventListener('keydown', (e) => {
+    if (modal.hidden) return;
+    if (e.key === 'Escape') { closeDiseaseModal(); return; }
+    // Trap Tab focus inside the dialog while it is open.
+    if (e.key === 'Tab') {
+      const focusables = modal.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])');
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
   /* ---------- Service worker ---------- */
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  // Registered on https and localhost. Besides offline caching, the worker
+  // injects COOP/COEP headers so repeat visits run multi-threaded WASM.
+  if ('serviceWorker' in navigator &&
+      (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
     navigator.serviceWorker.register('sw.js').catch(() => { /* non-fatal */ });
   }
 

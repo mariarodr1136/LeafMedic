@@ -1,13 +1,5 @@
-# LeafMedic desktop app dependencies
-#
-# TFLite inference — install ONE of the following:
-#   tensorflow          (full framework; easiest on desktop)
-#   ai-edge-litert      (lightweight LiteRT runtime; good on Raspberry Pi / newer Python)
-#   tflite-runtime      (legacy runtime; older Raspberry Pi OS images)
-#
-# On Raspberry Pi, the camera additionally needs Picamera2:
-#   sudo apt install python3-picamera2
-# On desktop/laptop, any webcam works out of the box via OpenCV.
+# LeafMedic desktop app dependencies (desktop/laptop).
+# On Raspberry Pi, use the lighter set instead:  pip3 install -r requirements-pi.txt
 
 numpy
 opencv-python

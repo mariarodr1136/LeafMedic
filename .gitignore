@@ -23,3 +23,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Tests / tooling
+.pytest_cache/
+node_modules/
+package.json
+package-lock.json
