@@ -119,6 +119,10 @@ Medians after warm-up; reproduce with `python3 benchmark.py --onnx` or the demo'
 
 The schema-validated knowledge base already covers **44 diseases** (all 38 PlantVillage classes), ready for an expanded model from the [training pipeline](training/README.md).
 
+
+<img width="1470" height="801" alt="Screenshot 2026-07-18 at 2 00 47 PM" src="https://github.com/user-attachments/assets/12cdd3f2-d73d-4a68-b1f3-b2e39cd1208d" />
+
+
 ## Project Structure
 
 ```
