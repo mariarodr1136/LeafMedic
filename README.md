@@ -123,7 +123,11 @@ The schema-validated knowledge base already covers **44 diseases** (all 38 Plant
 
 ---
 
-<img width="1470" height="801" alt="Screenshot 2026-07-18 at 2 00 47 PM" src="https://github.com/user-attachments/assets/12cdd3f2-d73d-4a68-b1f3-b2e39cd1208d" />
+
+
+https://github.com/user-attachments/assets/f92c4ee8-e3b5-4afb-9fe6-94a5d07572e7
+
+
 
 ---
 
