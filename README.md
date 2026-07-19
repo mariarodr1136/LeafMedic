@@ -23,6 +23,8 @@ Works in any modern browser — installable as an offline-capable PWA after the 
 - **Knows when not to answer** — predictive-entropy and vegetation heuristics downgrade non-leaf or ambiguous images to *Uncertain* instead of confidently misdiagnosing
 - **Explainable predictions** — an occlusion-sensitivity heatmap shows which leaf regions drove the diagnosis (gradient-free, so it works on the quantized black-box graph)
 - **Capture-quality feedback** — blur and exposure checks prompt a retake *before* a bad diagnosis
+- **Multi-photo diagnosis** — upload 2–5 photos of the same plant and the predictions are averaged (shots that fail the leaf check are left out); any diagnosis can be saved as a PDF report from the browser's print dialog
+- **Measured calibration** — `training/evaluate.py` reports Expected Calibration Error with a reliability diagram and dry-runs the trust-guard thresholds, so "knows when not to answer" is a number, not a slogan
 - **Private by design** — zero third-party requests at runtime; runtime, fonts, and model are all self-hosted
 - **Bilingual** — full English/Spanish UI and care guidance, switchable at runtime
 - **146 tests in CI** — golden predictions, cross-runtime parity, quality guards, data-contract validation, plus a headless-browser end-to-end smoke test on every push

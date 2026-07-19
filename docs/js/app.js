@@ -18,6 +18,9 @@
   const HISTORY_KEY = 'leafmedic-history';
   const HISTORY_MAX = 12;
   const CONFIDENCE_FLOOR = 0.3;
+  // Photos accepted per combined diagnosis. Each one costs a full inference
+  // pass, so the cap keeps the slowest backend (single-thread WASM) responsive.
+  const MULTI_MAX = 5;
 
   // Library card photos. Sources and licenses: docs/img/CREDITS.md
   // (Corn lethal necrosis has no openly-licensed photo yet, so it is left out
@@ -124,8 +127,9 @@
       await LeafModel.setLanguage(select.value);
       renderLibrary();
       renderHistory();
-      if (lastAnalysis) {
-        renderResults(lastAnalysis.preds, lastAnalysis.thumb, lastAnalysis.quality);
+      if (lastRendered) {
+        renderResults(lastRendered.preds, lastRendered.thumbUrl,
+          lastRendered.quality, lastRendered.batch);
       }
     });
   }
@@ -167,7 +171,7 @@
   const fileInput = $('file-input');
   dropzone.addEventListener('click', () => fileInput.click());
   dropzone.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
-  fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); fileInput.value = ''; });
+  fileInput.addEventListener('change', () => { if (fileInput.files.length) loadFiles([...fileInput.files]); fileInput.value = ''; });
   ['dragover', 'dragenter'].forEach((ev) => dropzone.addEventListener(ev, (e) => {
     e.preventDefault();
     dropzone.classList.add('dragging');
@@ -177,18 +181,32 @@
     dropzone.classList.remove('dragging');
   }));
   dropzone.addEventListener('drop', (e) => {
-    const file = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'));
-    if (file) loadFile(file);
+    const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/'));
+    if (files.length) loadFiles(files);
   });
   document.addEventListener('paste', (e) => {
     const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith('image/'));
-    if (item) loadFile(item.getAsFile());
+    if (item) loadFiles([item.getAsFile()]);
   });
-  function loadFile(file) {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => { analyze(img); URL.revokeObjectURL(url); };
-    img.src = url;
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(`Could not read ${file.name}`)); };
+      img.src = url;
+    });
+  }
+  // Several files at once become one combined diagnosis of the same plant.
+  async function loadFiles(files) {
+    try {
+      const images = await Promise.all(files.slice(0, MULTI_MAX).map(loadImage));
+      if (images.length === 1) analyze(images[0]);
+      else analyzeBatch(images);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
   }
 
   /* ---------- Camera ---------- */
@@ -257,12 +275,35 @@
     try {
       const thumb = makeThumbnail(source, 320);
       const result = await LeafModel.classify(source, 3);
-      lastAnalysis = { ...result, thumb };
+      lastAnalysis = { ...result, thumb, batch: null };
       renderResults(result.preds, thumb, result.quality);
       // An unreliable result is stored flagged, so history shows it as
       // "Uncertain" instead of presenting the class name as a diagnosis.
       pushHistory(result.preds, makeThumbnail(source, 96),
         unreliableResult(result.preds, result.quality));
+      if (BENCH_MODE) reportBench(result);
+    } catch (err) {
+      console.error(err);
+      alert(`Analysis failed: ${err.message}`);
+    } finally {
+      resultsPanel.classList.remove('analyzing');
+    }
+  }
+
+  /* Two or more photos of the same plant: average the predictions (see
+   * LeafModel.classifyBatch), represent the result with the sharpest photo. */
+  async function analyzeBatch(sources) {
+    if (!inputsEnabled) return;
+    resultsPanel.classList.add('analyzing');
+    try {
+      const result = await LeafModel.classifyBatch(sources, 3);
+      const best = sources[result.bestIndex];
+      const thumb = makeThumbnail(best, 320);
+      const batch = { used: result.imagesUsed, total: result.imagesTotal };
+      lastAnalysis = { ...result, thumb, batch };
+      renderResults(result.preds, thumb, result.quality, batch);
+      pushHistory(result.preds, makeThumbnail(best, 96),
+        unreliableResult(result.preds, result.quality), result.imagesUsed);
       if (BENCH_MODE) reportBench(result);
     } catch (err) {
       console.error(err);
@@ -283,7 +324,12 @@
     return canvas.toDataURL('image/jpeg', 0.85);
   }
 
-  function renderResults(rawPreds, thumbUrl, quality) {
+  // What the results panel currently shows — the report builder reads this,
+  // so a report can be saved even for a history replay (which has no
+  // lastAnalysis pixel buffer).
+  let lastRendered = null;
+
+  function renderResults(rawPreds, thumbUrl, quality, batch = null) {
     // Re-resolve display names from labels on every render so a language
     // change repaints existing results instead of keeping the names captured
     // at analysis time.
@@ -296,6 +342,7 @@
     const healthy = /healthy/i.test(top.label);
     const notLeaf = !!(quality && quality.notLeaf);
     const lowConfidence = unreliableResult(preds, quality);
+    lastRendered = { preds, thumbUrl, quality, batch, lowConfidence, healthy };
 
     $('results-empty').hidden = true;
     $('results-content').hidden = false;
@@ -303,6 +350,20 @@
 
     $('low-confidence-note').innerHTML = notLeaf ? t('results.notLeaf') : t('results.lowConfidence');
     $('low-confidence-note').hidden = !lowConfidence;
+
+    // Combined-diagnosis note: how many photos went into this result, and
+    // whether any were rejected as not-a-leaf and left out of the average.
+    const multiNote = $('multi-note');
+    if (batch && batch.used > 1) {
+      let note = t('results.multiNote').replace('{n}', batch.used);
+      if (batch.total > batch.used) {
+        note += ` ${t('results.multiSkipped').replace('{m}', batch.total - batch.used)}`;
+      }
+      multiNote.textContent = note;
+      multiNote.hidden = false;
+    } else {
+      multiNote.hidden = true;
+    }
 
     // Capture-quality problems are actionable in a way a low score is not:
     // the fix is "retake the photo like this", so they get their own note.
@@ -362,6 +423,10 @@
         <strong>🌿 ${t('results.healthyTitle')}</strong>
         <p>${t('results.healthyCopy')}</p>
       </div>` : '') : treatmentHTML(info);
+
+    // A report is only offered for a result worth keeping — an Uncertain
+    // verdict has nothing to print.
+    $('report-block').hidden = lowConfidence;
 
     resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -460,6 +525,66 @@
     ctx.drawImage(heat, 0, 0, gridSize, gridSize, 0, 0, size, size);
   }
 
+  /* ---------- Printable report ---------- */
+  // Fills a print-only page with the current result and opens the browser's
+  // print dialog. "Save as PDF" is built into every browser's print dialog,
+  // so the export needs no library, works offline, and — like everything
+  // else here — never sends the photo anywhere.
+  function reportHTML() {
+    const { preds, thumbUrl, batch, healthy } = lastRendered;
+    const top = preds[0];
+    const info = LeafModel.getTreatment(top.label);
+    const when = new Date().toLocaleString(I18n.getLang(),
+      { dateStyle: 'long', timeStyle: 'short' });
+    const badge = healthy
+      ? `<span class="diagnosis-badge healthy">${t('results.healthy')}</span>`
+      : `<span class="diagnosis-badge severity-${info?.severity || 'medium'}">${info?.severity || 'medium'} ${t('results.severitySuffix')}</span>`;
+    const multi = batch && batch.used > 1
+      ? `<p class="diagnosis-sub">${t('results.multiNote').replace('{n}', batch.used)}</p>` : '';
+    const rows = preds.map(({ name, confidence }) => {
+      const pct = (confidence * 100).toFixed(1);
+      return `
+        <div class="pred-row">
+          <span class="pred-name">${name}</span>
+          <div class="pred-track"><div class="pred-fill" style="width:${pct}%"></div></div>
+          <span class="pred-pct">${pct}%</span>
+        </div>`;
+    }).join('');
+
+    return `
+      <header class="report-head">
+        <svg class="brand-leaf" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7 6 4 10.5 4 15a8 8 0 0 0 16 0c0-4.5-3-9-8-13Z" fill="currentColor" stroke="none"/></svg>
+        <span class="report-brand">Leaf<em>Medic</em></span>
+        <span class="report-title">${t('report.title')}</span>
+      </header>
+      <p class="report-meta">${t('report.generated')} ${when} · mariarodr1136.github.io/LeafMedic</p>
+      <div class="analyzed-row">
+        <img class="analyzed-img" src="${thumbUrl}" alt="">
+        <div class="diagnosis">
+          ${badge}
+          <h2>${top.name}</h2>
+          <p class="diagnosis-sub">${(top.confidence * 100).toFixed(1)}% ${t('results.confidenceSuffix')}</p>
+          ${multi}
+        </div>
+      </div>
+      <h3 class="section-title">${t('results.confidence')}</h3>
+      ${rows}
+      ${healthy ? `
+      <div class="healthy-note">
+        <strong>🌿 ${t('results.healthyTitle')}</strong>
+        <p>${t('results.healthyCopy')}</p>
+      </div>` : (info ? treatmentHTML(info) : '')}
+      <p class="disclaimer">${t('results.disclaimer')}</p>`;
+  }
+
+  $('report-btn').addEventListener('click', () => {
+    if (!lastRendered || lastRendered.lowConfidence) return;
+    $('report-page').innerHTML = reportHTML();
+    document.body.classList.add('print-report');
+    window.print();
+  });
+  window.addEventListener('afterprint', () => document.body.classList.remove('print-report'));
+
   /* ---------- Benchmark mode (?bench) ---------- */
   // Turns the README's quoted latency figures into something a visitor can
   // reproduce on their own hardware.
@@ -522,13 +647,13 @@
   function getHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
   }
-  function pushHistory(preds, thumbUrl, uncertain) {
+  function pushHistory(preds, thumbUrl, uncertain, count = 1) {
     const top = preds[0];
     const entries = getHistory();
     entries.unshift({
       name: top.name, label: top.label, confidence: top.confidence,
       preds: preds.map(({ name, label, confidence }) => ({ name, label, confidence })),
-      uncertain: !!uncertain, thumb: thumbUrl, ts: Date.now(),
+      uncertain: !!uncertain, count, thumb: thumbUrl, ts: Date.now(),
     });
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, HISTORY_MAX)));
@@ -547,6 +672,8 @@
       const info = entry.label ? LeafModel.getTreatment(entry.label) : null;
       const name = (info && info.common_name) || entry.name;
       const when = new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      // Combined analyses carry how many photos went into them.
+      const photos = entry.count > 1 ? ` · ${entry.count} 📷` : '';
       const item = document.createElement('button');
       item.className = 'history-item';
       item.title = 'Show this result again';
@@ -557,16 +684,17 @@
         <div class="history-meta">
           ${entry.uncertain
             ? `<strong>${t('results.uncertain')}</strong>
-          <span>${when}</span>`
+          <span>${when}${photos}</span>`
             : `<strong>${name}</strong>
-          <span>${(confidence * 100).toFixed(0)}% · ${when}</span>`}
+          <span>${(confidence * 100).toFixed(0)}% · ${when}${photos}</span>`}
         </div>`;
       item.addEventListener('click', () => {
         // Older entries stored only the top prediction — rebuild a preds list.
         const preds = entry.preds || [{ name: entry.name, label: entry.label, confidence: entry.confidence }];
         // A replay has no pixel buffer, so the explanation button stays hidden.
         lastAnalysis = null;
-        renderResults(preds, thumb, entry.uncertain ? { uncertain: true } : null);
+        renderResults(preds, thumb, entry.uncertain ? { uncertain: true } : null,
+          entry.count > 1 ? { used: entry.count, total: entry.count } : null);
         resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
       grid.appendChild(item);

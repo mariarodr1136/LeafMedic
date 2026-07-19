@@ -105,6 +105,52 @@ try {
   if (!ood.notLeaf) fail(`sky image scored ${ood.leafScore.toFixed(3)} vegetation — OOD guard missed it`);
   if (ood.trustworthy) fail('a non-leaf image was reported as trustworthy');
 
+  // --- Multi-photo diagnosis: averaging leaves the non-leaf shot out -------
+  await page.evaluate(async () => {
+    const load = (src) => new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+    const c = document.createElement('canvas');
+    c.width = 300; c.height = 300;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#4a8fe0';
+    ctx.fillRect(0, 0, 300, 300);
+    window.__batch = await LeafModel.classifyBatch([
+      await load('samples/corn_rust_1.jpg'),
+      await load('samples/corn_rust_2.jpg'),
+      await load(c.toDataURL()),
+    ], 3);
+  });
+  const batch = await page.evaluate(() => ({
+    used: window.__batch.imagesUsed,
+    total: window.__batch.imagesTotal,
+    top: window.__batch.preds[0].label,
+    trustworthy: window.__batch.quality.trustworthy,
+  }));
+  if (batch.total !== 3 || batch.used !== 2) {
+    fail(`batch should use 2 of 3 photos (sky excluded), used ${batch.used} of ${batch.total}`);
+  }
+  if (!/Common_rust/.test(batch.top)) fail(`batch diagnosis was "${batch.top}", expected corn rust`);
+  if (!batch.trustworthy) fail('two good leaf photos averaged to an untrustworthy result');
+
+  // --- Printable report: fills the print-only page for a confident result --
+  if (await page.locator('#report-block').isHidden()) fail('report button hidden for a confident result');
+  await page.evaluate(() => { window.print = () => { window.__printed = true; }; });
+  await page.click('#report-btn');
+  const report = await page.evaluate(() => ({
+    printed: window.__printed === true,
+    printClass: document.body.classList.contains('print-report'),
+    html: document.getElementById('report-page').innerHTML,
+  }));
+  if (!report.printed) fail('report button did not open the print dialog');
+  if (!report.printClass) fail('body.print-report not set for printing');
+  if (!/corn common rust/i.test(report.html)) fail('report page is missing the diagnosis');
+  if (!/Treatment/.test(report.html)) fail('report page is missing treatment guidance');
+  await page.evaluate(() => document.body.classList.remove('print-report'));
+
   // --- Language switch translates UI and care guidance ---------------------
   await page.selectOption('#lang-select', 'es');
   await page.waitForFunction(
@@ -142,6 +188,7 @@ try {
   console.log(
     `PASS: backend=${backend}, diagnosis="${diagnosis}", heatmap ok, ` +
     `OOD guard caught non-leaf (veg=${ood.leafScore.toFixed(3)}), ` +
+    `batch used ${batch.used}/${batch.total} photos, report ok, ` +
     `es/en switch ok, ${cards} library cards, no console errors`
   );
   await browser.close();

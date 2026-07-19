@@ -229,6 +229,74 @@ const LeafModel = (() => {
   }
 
   /*
+   * Classify several photos of the same plant as one diagnosis. Each image is
+   * preprocessed and run individually, then the probability vectors are
+   * averaged — a small test-time ensemble that damps single-shot noise
+   * (glare, an odd angle, a half-out-of-frame leaf).
+   *
+   * Photos that fail the vegetation check are left out of the average, so an
+   * accidental shot of the ground does not dilute the leaf evidence; if none
+   * pass, all are kept and the verdict is downgraded by the usual guards.
+   * Capture warnings use the most favorable metrics across the used photos:
+   * one sharp, well-lit photo is enough evidence, so the user is only nagged
+   * when every photo shares the defect. The sharpest used photo becomes the
+   * representative image for the thumbnail and the occlusion heatmap.
+   */
+  async function classifyBatch(sources, k = 3) {
+    if (!session) throw new Error('Model not loaded');
+    if (!sources.length) throw new Error('No images to classify');
+
+    const runs = [];
+    let totalMs = 0;
+    for (const source of sources) {
+      const sw = source.videoWidth || source.naturalWidth || source.width;
+      const sh = source.videoHeight || source.naturalHeight || source.height;
+      const { tensor, rgb, metrics } = toInputTensor(source, sw, sh);
+      const probs = await runTensor(tensor);
+      totalMs += lastInferenceMs;
+      runs.push({ probs, rgb, metrics });
+    }
+
+    const { LEAF_SCORE_MIN, DARK_MEAN_MAX, BRIGHT_MEAN_MIN } = LeafQuality.thresholds;
+    let used = runs.filter((r) => r.metrics.leafScore >= LEAF_SCORE_MIN);
+    if (!used.length) used = runs;
+
+    const probsArr = new Array(labels.length).fill(0);
+    for (const r of used) {
+      for (let i = 0; i < probsArr.length; i++) probsArr[i] += r.probs[i] / used.length;
+    }
+    const preds = rank(probsArr, k);
+
+    const midLuma = (DARK_MEAN_MAX + BRIGHT_MEAN_MIN) / 2;
+    const metrics = {
+      leafScore: Math.max(...runs.map((r) => r.metrics.leafScore)),
+      blurScore: Math.max(...used.map((r) => r.metrics.blurScore)),
+      clippedFraction: Math.min(...used.map((r) => r.metrics.clippedFraction)),
+      meanLuma: used.reduce((a, b) =>
+        (Math.abs(b.metrics.meanLuma - midLuma) < Math.abs(a.metrics.meanLuma - midLuma) ? b : a)
+      ).metrics.meanLuma,
+    };
+    const quality = LeafQuality.assess(metrics, {
+      topConfidence: preds[0] ? preds[0].confidence : 0,
+      entropy: LeafQuality.normalizedEntropy(probsArr),
+    });
+
+    const best = used.reduce((a, b) => (b.metrics.blurScore > a.metrics.blurScore ? b : a));
+    return {
+      preds,
+      probs: probsArr,
+      rgb: best.rgb,
+      quality,
+      leafScore: quality.leafScore,
+      entropy: quality.entropy,
+      inferenceMs: totalMs,
+      imagesUsed: used.length,
+      imagesTotal: runs.length,
+      bestIndex: runs.indexOf(best),
+    };
+  }
+
+  /*
    * Occlusion sensitivity: slide an opaque patch across the image, re-run
    * inference for each position, and record how far the target class's
    * confidence falls. Regions whose removal hurts the prediction most are the
@@ -286,7 +354,7 @@ const LeafModel = (() => {
   }
 
   return {
-    load, isReady, classify, occlusionMap, setLanguage,
+    load, isReady, classify, classifyBatch, occlusionMap, setLanguage,
     getLabels, getTreatment, getAllTreatments,
     getBackend, getLastInferenceMs, getInputSize,
   };

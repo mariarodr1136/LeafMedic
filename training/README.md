@@ -55,7 +55,19 @@ Each run writes to `training/runs/<timestamp>-<backbone>/`:
 | `metrics.json` | Test accuracy and artifact sizes |
 | `history.csv` | Per-epoch loss and accuracy |
 | `confusion_matrix.png` | Row-normalized, written by `evaluate.py` |
-| `evaluation.json` | Per-class precision, recall, and F1 |
+| `reliability_diagram.png` | Confidence vs accuracy per bin, written by `evaluate.py` |
+| `evaluation.json` | Per-class precision/recall/F1, calibration (ECE), and trust-guard stats |
+
+`evaluate.py` also measures **calibration**: Expected Calibration Error with a
+reliability diagram, and a dry run of the shipped trust-guard thresholds
+(`ENTROPY_MAX`, the confidence floor) reporting how many misclassifications
+they catch, how many correct diagnoses they suppress, and the accuracy of what
+survives the guard. The app's "knows when not to answer" claim rests on those
+thresholds; this is the report that says whether they hold for a given model.
+For the record, the shipped AgriPredict model measured on PlantVillage (10
+images/class) is overconfident — ECE 0.30, mean confidence 0.79 against 0.49
+accuracy — and the entropy guard catches none of its in-domain
+misclassifications, which is one more argument for retraining.
 
 ## Design decisions worth knowing
 
