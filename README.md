@@ -16,6 +16,21 @@ Works in any modern browser — installable as an offline-capable PWA after the 
 
 ![Raspberry Pi with camera module](https://github.com/user-attachments/assets/c243f4a5-1a0e-48db-b00f-42197850fbcb)
 
+## Table of Contents
+
+- [Highlights](#highlights)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [How It Works](#how-it-works)
+  - [Performance](#performance)
+  - [Notable engineering decisions](#notable-engineering-decisions)
+- [Supported Crops](#supported-crops)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [License & Credits](#license--credits)
+- [Contact](#contact)
+
 ## Highlights
 
 - **Edge AI deployment** — an 11 MB uint8-quantized MobileNet converted from TFLite to ONNX, with byte-identical outputs verified by automated parity tests

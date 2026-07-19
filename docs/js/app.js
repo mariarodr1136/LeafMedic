@@ -52,14 +52,13 @@
   });
   $('brand-link').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); });
   $('crumb-home').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); });
-  $('footer-brand-link').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('footer-brand-link').addEventListener('click', (e) => { e.preventDefault(); showView('detect'); });
   // Footer links and the home page's "diagnose now" CTA jump between views
   // the same way.
   document.querySelectorAll('[data-goto]').forEach((el) => {
     el.addEventListener('click', (e) => {
       e.preventDefault();
       showView(el.dataset.goto);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
   let currentView = 'detect';
@@ -72,6 +71,7 @@
     });
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${currentView}`));
     renderHero();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (currentView !== 'diagnose') stopCamera();
   }
 
@@ -427,8 +427,6 @@
     // A report is only offered for a result worth keeping — an Uncertain
     // verdict has nothing to print.
     $('report-block').hidden = lowConfidence;
-
-    resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function treatmentHTML(info) {
@@ -695,7 +693,6 @@
         lastAnalysis = null;
         renderResults(preds, thumb, entry.uncertain ? { uncertain: true } : null,
           entry.count > 1 ? { used: entry.count, total: entry.count } : null);
-        resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
       grid.appendChild(item);
     });
