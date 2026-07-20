@@ -28,6 +28,7 @@ Ideas that would be especially welcome:
 | `python3 disease_database.py` | Tests the treatment knowledge base |
 | `python3 -m http.server 3000 -d docs` | Serves the browser demo locally at `localhost:3000` |
 | `pytest tests/` | Runs the full Python suite (golden, parity, quality, data integrity) |
+| `node --test tests/js/*.test.mjs` | Unit tests for the browser-only logic (quality guards, i18n) |
 | `node tests/web_smoke.mjs` | End-to-end browser demo smoke test (needs `playwright`) |
 | `python3 benchmark.py --onnx` | Measures inference latency on your machine |
 | `python3 image_quality.py <img>` | Prints the quality/OOD metrics for an image |

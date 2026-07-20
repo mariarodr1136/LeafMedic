@@ -66,6 +66,33 @@ const LeafModel = (() => {
     return out;
   }
 
+  function toHex(buffer) {
+    return Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /* The model is fetched same-origin over HTTPS, but a corrupted cache entry
+   * or a bad CDN edge should fail loudly rather than feed a scrambled graph
+   * into the runtime. crypto.subtle requires a secure context, which both
+   * GitHub Pages and localhost dev satisfy. */
+  async function verifyModelIntegrity(modelBytes) {
+    let manifest;
+    try {
+      manifest = await (await fetch('model/manifest.json')).json();
+    } catch (err) {
+      console.warn('[LeafMedic] no model manifest, skipping integrity check:', err.message);
+      return;
+    }
+    if (!crypto.subtle) return;
+    const digest = await crypto.subtle.digest('SHA-256', modelBytes.buffer);
+    const actual = toHex(digest);
+    if (manifest.sha256 && actual !== manifest.sha256) {
+      throw new Error(
+        `Model integrity check failed (expected ${manifest.sha256.slice(0, 12)}…, got ${actual.slice(0, 12)}…). ` +
+        'The download may be corrupted — try reloading.'
+      );
+    }
+  }
+
   /* Care guidance is per-language data. English is the source of truth and the
    * fallback: a translation that fails to load must not break diagnosis. */
   async function fetchTreatments(lang) {
@@ -106,6 +133,7 @@ const LeafModel = (() => {
     ]);
     labels = await labelsRes.json();
     treatments = treatRes;
+    await verifyModelIntegrity(modelBytes);
 
     // Try the preferred provider, then fall back rather than failing outright:
     // a browser can advertise an adapter and still refuse to create a device.

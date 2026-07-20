@@ -39,6 +39,17 @@ jobs:
       - name: Run pytest
         run: pytest tests/ -v
 
+  js-unit-tests:
+    name: JS unit tests (quality, i18n)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Run node:test
+        run: node --test tests/js/*.test.mjs
+
   web-smoke:
     name: Browser demo smoke test
     runs-on: ubuntu-latest
@@ -54,3 +65,16 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run smoke test
         run: node tests/web_smoke.mjs
+
+  lighthouse:
+    name: Lighthouse CI (performance, a11y, SEO)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          configPath: ./.github/lighthouserc.json

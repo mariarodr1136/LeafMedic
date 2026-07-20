@@ -651,12 +651,40 @@
     entries.unshift({
       name: top.name, label: top.label, confidence: top.confidence,
       preds: preds.map(({ name, label, confidence }) => ({ name, label, confidence })),
-      uncertain: !!uncertain, count, thumb: thumbUrl, ts: Date.now(),
+      uncertain: !!uncertain, count, thumb: thumbUrl, ts: Date.now(), plant: '',
     });
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, HISTORY_MAX)));
     } catch { /* storage full — drop silently */ }
     renderHistory();
+  }
+  // A tag is opt-in and freeform (e.g. "Balcony tomato #1"), letting the same
+  // plant's diagnoses be grouped into a timeline without inventing plant IDs.
+  function setHistoryPlantTag(ts, plant) {
+    const entries = getHistory();
+    const entry = entries.find((e) => e.ts === ts);
+    if (!entry) return;
+    entry.plant = plant.trim();
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(entries)); } catch { /* storage full — drop silently */ }
+    renderHistory();
+  }
+  // Shared by both the history grid and plant timelines, which both replay
+  // a stored entry into the results panel the same way.
+  function replayHistoryEntry(entry) {
+    const preds = entry.preds || [{ name: entry.name, label: entry.label, confidence: entry.confidence }];
+    // A replay has no pixel buffer, so the explanation button stays hidden.
+    lastAnalysis = null;
+    renderResults(preds, entry.thumb, entry.uncertain ? { uncertain: true } : null,
+      entry.count > 1 ? { used: entry.count, total: entry.count } : null);
+  }
+  function historyDisplayName(entry) {
+    // Re-resolve the display name from the label so stored history follows
+    // the current language instead of freezing the name at analysis time.
+    const info = entry.label ? LeafModel.getTreatment(entry.label) : null;
+    return (info && info.common_name) || entry.name;
+  }
+  function formatHistoryWhen(ts) {
+    return new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
   function renderHistory() {
     const entries = getHistory();
@@ -665,13 +693,13 @@
     grid.innerHTML = '';
     entries.forEach((entry) => {
       const { confidence, thumb, ts } = entry;
-      // Re-resolve the display name from the label so stored history follows
-      // the current language instead of freezing the name at analysis time.
-      const info = entry.label ? LeafModel.getTreatment(entry.label) : null;
-      const name = (info && info.common_name) || entry.name;
-      const when = new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      const name = historyDisplayName(entry);
+      const when = formatHistoryWhen(ts);
       // Combined analyses carry how many photos went into them.
       const photos = entry.count > 1 ? ` · ${entry.count} 📷` : '';
+      const wrap = document.createElement('div');
+      wrap.className = 'history-item-wrap';
+
       const item = document.createElement('button');
       item.className = 'history-item';
       item.title = 'Show this result again';
@@ -686,21 +714,73 @@
             : `<strong>${name}</strong>
           <span>${(confidence * 100).toFixed(0)}% · ${when}${photos}</span>`}
         </div>`;
-      item.addEventListener('click', () => {
-        // Older entries stored only the top prediction — rebuild a preds list.
-        const preds = entry.preds || [{ name: entry.name, label: entry.label, confidence: entry.confidence }];
-        // A replay has no pixel buffer, so the explanation button stays hidden.
-        lastAnalysis = null;
-        renderResults(preds, thumb, entry.uncertain ? { uncertain: true } : null,
-          entry.count > 1 ? { used: entry.count, total: entry.count } : null);
-      });
-      grid.appendChild(item);
+      item.addEventListener('click', () => replayHistoryEntry(entry));
+      wrap.appendChild(item);
+
+      const tagInput = document.createElement('input');
+      tagInput.className = 'history-tag-input';
+      tagInput.type = 'text';
+      tagInput.maxLength = 40;
+      tagInput.value = entry.plant || '';
+      tagInput.placeholder = t('history.tagPlaceholder');
+      tagInput.addEventListener('change', () => setHistoryPlantTag(ts, tagInput.value));
+      wrap.appendChild(tagInput);
+
+      grid.appendChild(wrap);
     });
+    renderTimelines(entries);
   }
   $('history-clear').addEventListener('click', () => {
     localStorage.removeItem(HISTORY_KEY);
     renderHistory();
   });
+
+  /* ---------- Plant timelines ----------
+   * Diagnoses tagged with the same plant name, grouped and shown oldest to
+   * newest, so a recurring issue (or its recovery) is visible at a glance. */
+  function renderTimelines(entries) {
+    const byPlant = new Map();
+    entries.forEach((entry) => {
+      const plant = (entry.plant || '').trim();
+      if (!plant) return;
+      if (!byPlant.has(plant)) byPlant.set(plant, []);
+      byPlant.get(plant).push(entry);
+    });
+
+    const block = $('timelines-block');
+    const list = $('timelines-list');
+    list.innerHTML = '';
+    const groups = [...byPlant.entries()].filter(([, group]) => group.length > 1);
+    block.hidden = groups.length === 0;
+    if (groups.length === 0) return;
+
+    groups.forEach(([plant, group]) => {
+      const chronological = [...group].sort((a, b) => a.ts - b.ts);
+      const card = document.createElement('div');
+      card.className = 'timeline-card';
+      const header = document.createElement('div');
+      header.className = 'timeline-head';
+      header.innerHTML = `<strong>${plant}</strong><span>${t('timelines.count').replace('{n}', chronological.length)}</span>`;
+      card.appendChild(header);
+
+      const strip = document.createElement('div');
+      strip.className = 'timeline-strip';
+      chronological.forEach((entry) => {
+        const item = document.createElement('button');
+        item.className = 'timeline-item';
+        item.title = 'Show this result again';
+        const name = entry.uncertain ? t('results.uncertain') : historyDisplayName(entry);
+        item.innerHTML = `
+          <img src="${entry.thumb}" alt="">
+          <span>${formatHistoryWhen(entry.ts)}</span>
+          <strong>${name}</strong>`;
+        item.addEventListener('click', () => replayHistoryEntry(entry));
+        strip.appendChild(item);
+      });
+      card.appendChild(strip);
+      list.appendChild(card);
+    });
+  }
 
   /* ---------- Disease library ---------- */
   function renderLibrary() {

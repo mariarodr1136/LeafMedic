@@ -39,10 +39,11 @@ Works in any modern browser — installable as an offline-capable PWA after the 
 - **Explainable predictions** — an occlusion-sensitivity heatmap shows which leaf regions drove the diagnosis (gradient-free, so it works on the quantized black-box graph)
 - **Capture-quality feedback** — blur and exposure checks prompt a retake *before* a bad diagnosis
 - **Multi-photo diagnosis** — upload 2–5 photos of the same plant and the predictions are averaged (shots that fail the leaf check are left out); any diagnosis can be saved as a PDF report from the browser's print dialog
+- **Plant timelines** — tag a saved diagnosis with a plant name (e.g. "Backyard tomato #1") and repeat diagnoses of that plant line up in a chronological strip, so a recurring issue — or its recovery — is visible at a glance; all local, no account needed
 - **Measured calibration** — `training/evaluate.py` reports Expected Calibration Error with a reliability diagram and dry-runs the trust-guard thresholds, so "knows when not to answer" is a number, not a slogan
 - **Private by design** — zero third-party requests at runtime; runtime, fonts, and model are all self-hosted
 - **Bilingual** — full English/Spanish UI and care guidance, switchable at runtime
-- **146 tests in CI** — golden predictions, cross-runtime parity, quality guards, data-contract validation, plus a headless-browser end-to-end smoke test on every push
+- **167 tests in CI** — golden predictions, cross-runtime parity, quality guards, data-contract validation, JS unit tests for the browser-only logic, plus a headless-browser end-to-end smoke test on every push
 - **Retrainable** — a complete pipeline (`training/`) for fine-tuning on PlantVillage, with int8 quantization, ONNX export, and parity verification built in
 
 ## Tech Stack
@@ -52,7 +53,7 @@ Works in any modern browser — installable as an offline-capable PWA after the 
 | Browser | ONNX Runtime Web (WebGPU + WASM), vanilla JS (zero runtime dependencies), Canvas API, Service Worker PWA, GitHub Pages |
 | Desktop / Pi | Python, TensorFlow Lite / LiteRT, PyQt5, OpenCV, Picamera2 |
 | Model | MobileNet, full-integer uint8 quantization, 11 MB, 300×300 RGB input, TFLite → ONNX via tf2onnx |
-| Quality | pytest (146 tests), Playwright end-to-end, ruff + mypy, three-job GitHub Actions CI |
+| Quality | pytest (147 tests), `node:test` (20 tests), Playwright end-to-end, Lighthouse CI, ruff + mypy, five-job GitHub Actions CI |
 
 ## Quick Start
 
@@ -161,7 +162,7 @@ LeafMedic/
 ├── gui_module.py         # PyQt5 interface
 ├── disease_database.py   # Treatment knowledge base (data/treatments.json)
 ├── training/             # Fine-tune, quantize, export, evaluate
-├── tests/                # 146 pytest tests + Playwright browser smoke test
+├── tests/                # 147 pytest tests + 20 JS unit tests + Playwright browser smoke test
 └── docs/                 # Browser demo (GitHub Pages, PWA)
 ```
 
@@ -169,7 +170,7 @@ The desktop and browser stacks are deliberate mirrors — every inference-path m
 
 ## Testing
 
-Every push runs three CI jobs: lint + type checking (ruff, mypy), the Python suite, and a headless-browser end-to-end run.
+Every push runs five CI jobs: lint + type checking (ruff, mypy), the Python suite, JS unit tests for the browser-only logic, a headless-browser end-to-end run, and Lighthouse CI (accessibility and SEO gated at 0.9, performance and best-practices tracked as a warning).
 
 - **Golden predictions** — each sample class must be top-1 by majority vote, catching silent model or preprocessing regressions
 - **Cross-runtime parity** — TFLite and ONNX outputs must be byte-identical on every sample image and on random tensors

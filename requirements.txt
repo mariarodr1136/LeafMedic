@@ -1,7 +1,7 @@
 # LeafMedic desktop app dependencies (desktop/laptop).
 # On Raspberry Pi, use the lighter set instead:  pip3 install -r requirements-pi.txt
 
-numpy
-opencv-python
-PyQt5
-tensorflow
+numpy~=2.2
+opencv-python~=4.11
+PyQt5~=5.15
+tensorflow~=2.21
