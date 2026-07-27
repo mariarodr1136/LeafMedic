@@ -10,7 +10,8 @@ Live Demo: [mariarodr1136.github.io/LeafMedic](https://mariarodr1136.github.io/L
 
 Works in any modern browser — installable as an offline-capable PWA after the one-time 11 MB model download.
 
-<img width="2772" height="1504" alt="LeafMedic browser demo" src="https://github.com/user-attachments/assets/f37e3914-394d-4425-a2e0-100fdd1cd5cf" />
+<img width="2774" height="1504" alt="Gemini_Generated_Image_g02ewqg02ewqg02e" src="https://github.com/user-attachments/assets/5f899df7-9553-498b-9b34-e67a7d46117f" />
+
 
 <img width="1470" height="792" alt="Diagnosis with treatment guidance" src="https://github.com/user-attachments/assets/1904791b-f9ef-4298-bdc2-3ee97d777f37" />
 
@@ -139,11 +140,7 @@ The schema-validated knowledge base already covers **44 diseases** (all 38 Plant
 
 ---
 
-
-
-https://github.com/user-attachments/assets/f92c4ee8-e3b5-4afb-9fe6-94a5d07572e7
-
-
+https://github.com/user-attachments/assets/d03cd647-c351-4e73-85e4-799739a2b48c
 
 ---
 
