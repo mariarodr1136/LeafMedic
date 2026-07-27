@@ -45,7 +45,7 @@ resized and center-cropped to a 16:10 card format; no other alterations were mad
 
 | File | Subject | License |
 |---|---|---|
-| `docs/img/gardener.png` | Hero illustration (gardener with plant) | Supplied by the project author |
+| `docs/img/hero-garden.jpg` | Hero background (alocasia leaf close-up, cropped and blurred) | Licensed stock photo, supplied by the project author |
 | `docs/samples/*.jpg` | Sample leaf photos used by the detector | PlantVillage dataset, CC0 |
 | `docs/fonts/nunito-latin.woff2` | Nunito typeface | SIL Open Font License 1.1 |
 | `docs/fonts/outfit-latin.woff2` | Outfit typeface | SIL Open Font License 1.1 |

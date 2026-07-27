@@ -45,7 +45,9 @@
   --cta-grad: linear-gradient(to right, #27995d, #71c14e);
   --hero-bg: linear-gradient(90deg, #bce8db, #dcf5ea);
   --hero-ink: #1c352b;
-  --hero-ink-soft: rgb(28 53 43 / 0.78);
+  /* Opaque rather than translucent: this ink only ever sits on the hero photo,
+   * and letting the photo show through it costs too much contrast. */
+  --hero-ink-soft: #16291f;
   --hero-accent: #157a54;
   color-scheme: light;
 }
@@ -173,13 +175,29 @@ img { max-width: 100%; }
 .progress-fill { height: 100%; width: 0; background: #fff; border-radius: 3px; transition: width 0.2s; }
 
 /* ---------- Hero ---------- */
-.hero { background: var(--hero-bg); }
+/* Dark leaf macro behind the hero (the blur is baked into the file). The photo
+ * is too dark for the site's green ink, so the hero flips to light type and the
+ * scrim darkens instead of whitening — scoped overrides here rather than new
+ * rules, since the same tokens style the nav on a white background. */
+.hero {
+  --hero-ink: #ffffff;
+  --hero-ink-soft: rgb(255 255 255 / 0.9);
+  --hero-accent: #9fe6b4;
+  background:
+    linear-gradient(100deg,
+      rgb(9 24 16 / 0.68) 0%,
+      rgb(9 24 16 / 0.5) 38%,
+      rgb(9 24 16 / 0.24) 68%,
+      rgb(9 24 16 / 0.08) 100%),
+    url("../img/hero-garden.jpg") center 66% / cover no-repeat,
+    var(--hero-bg);
+}
 .hero-inner {
   display: flex; align-items: center; gap: 2rem;
-  padding-top: 1.6rem; padding-bottom: 0;
-  min-height: 300px;
+  padding-top: 2.2rem; padding-bottom: 0;
+  min-height: 360px;
 }
-.hero-text { flex: 1 1 55%; padding-bottom: 2.2rem; }
+.hero-text { flex: 1 1 100%; max-width: 44rem; padding-bottom: 2.2rem; }
 .breadcrumb {
   display: flex; align-items: center; gap: 0.35rem;
   font-size: 0.9rem; margin-bottom: 1.4rem;
@@ -209,9 +227,6 @@ img { max-width: 100%; }
 }
 .btn-cta:hover { background: #f2f8f4; transform: translateY(-1px); }
 .btn-cta svg { width: 22px; height: 22px; stroke-width: 2; }
-
-.hero-art { flex: 1 1 45%; align-self: flex-end; display: flex; justify-content: flex-end; }
-.hero-art svg { width: 100%; max-width: 520px; height: auto; display: block; }
 
 /* ---------- Layout ---------- */
 .app-main { flex: 1; width: 100%; padding-top: 2rem; padding-bottom: 2rem; }
@@ -751,7 +766,17 @@ body:not(.model-ready) .camera-controls { pointer-events: none; opacity: 0.6; }
   .footer-inner { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 800px) {
-  .hero-art { display: none; }
+  /* Narrow screens put the copy over the whole width, so the scrim has to
+   * cover the whole width too. */
+  .hero {
+    background:
+      linear-gradient(170deg,
+        rgb(9 24 16 / 0.66) 0%,
+        rgb(9 24 16 / 0.56) 55%,
+        rgb(9 24 16 / 0.44) 100%),
+      url("../img/hero-garden.jpg") center 66% / cover no-repeat,
+      var(--hero-bg);
+  }
   .hero-text { padding-bottom: 2rem; }
   .hero h1 { font-size: 1.8rem; }
 }

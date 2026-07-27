@@ -7,7 +7,7 @@
  * same-origin, so require-corp is safe here. */
 'use strict';
 
-const CACHE = 'leafmedic-v4';
+const CACHE = 'leafmedic-v5';
 const SHELL = [
   '.',
   'index.html',
@@ -19,6 +19,7 @@ const SHELL = [
   'data/labels.json',
   'data/treatments.json',
   'data/treatments.es.json',
+  'img/hero-garden.jpg',
   'fonts/nunito-latin.woff2',
   'fonts/outfit-latin.woff2',
   'icons/icon.svg',
