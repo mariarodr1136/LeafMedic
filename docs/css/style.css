@@ -150,11 +150,12 @@ img { max-width: 100%; }
 
 /* ---------- Model banner ---------- */
 .model-banner {
-  background: var(--cta-grad); color: #fff;
+  /* Matches the promo bar: same yellow gradient, same brown ink. */
+  background: linear-gradient(90deg, #fbecc3, #f8e3ae); color: #5c4715;
   transition: opacity 0.5s, transform 0.5s;
 }
 .model-banner.done { opacity: 0; transform: translateY(-100%); }
-.model-banner.error { background: var(--red-500); }
+.model-banner.error { background: var(--red-500); color: #fff; }
 .model-banner-inner {
   padding-top: 0.55rem; padding-bottom: 0.55rem;
   display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
@@ -163,16 +164,18 @@ img { max-width: 100%; }
 .model-banner-text span { opacity: 0.85; }
 .spinner {
   width: 18px; height: 18px; border-radius: 50%;
-  border: 2.5px solid rgb(255 255 255 / 0.35); border-top-color: #fff;
+  border: 2.5px solid rgb(92 71 21 / 0.3); border-top-color: #5c4715;
   animation: spin 0.9s linear infinite;
 }
 .model-banner.error .spinner { display: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .progress-track {
   flex: 1; min-width: 120px; height: 6px; border-radius: 3px;
-  background: rgb(255 255 255 / 0.25); overflow: hidden;
+  background: rgb(92 71 21 / 0.2); overflow: hidden;
 }
-.progress-fill { height: 100%; width: 0; background: #fff; border-radius: 3px; transition: width 0.2s; }
+.progress-fill { height: 100%; width: 0; background: #5c4715; border-radius: 3px; transition: width 0.2s; }
+.model-banner.error .progress-track { background: rgb(255 255 255 / 0.25); }
+.model-banner.error .progress-fill { background: #fff; }
 
 /* ---------- Hero ---------- */
 /* Dark leaf macro behind the hero (the blur is baked into the file). The photo
