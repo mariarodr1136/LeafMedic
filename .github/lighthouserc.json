@@ -3,7 +3,7 @@
     "collect": {
       "staticDistDir": "docs",
       "url": [
-        "http://localhost:PORT/index.html"
+        "/index.html"
       ],
       "numberOfRuns": 1
     },
